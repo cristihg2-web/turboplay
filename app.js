@@ -3818,8 +3818,19 @@ function createDominoes(root, api) {
     `;
   }
 
+  function createRackPlaceholder(text, extraClass = "") {
+    const node = document.createElement("div");
+    node.className = `domino-empty ${extraClass}`.trim();
+    node.textContent = text;
+    return node;
+  }
+
   function renderCpuRack() {
     cpuRack.innerHTML = "";
+    if (!game.running) {
+      cpuRack.appendChild(createRackPlaceholder("CPU hand waiting", "is-cpu"));
+      return;
+    }
     game.cpuHand.forEach((tile, index) => {
       const back = document.createElement("div");
       back.className = "domino-tile domino-tile-back";
@@ -3849,6 +3860,10 @@ function createDominoes(root, api) {
 
   function renderPlayerRack() {
     playerRack.innerHTML = "";
+    if (!game.running) {
+      playerRack.appendChild(createRackPlaceholder("Press Start to deal your hand"));
+      return;
+    }
     sortHand(game.playerHand);
     game.playerHand.forEach((tile, index) => {
       const playableSides = getPlayableSides(tile);
@@ -4197,6 +4212,10 @@ function createDominoes(root, api) {
     playSelectedSide("right");
   });
 
+  api.setPrimary("Start", start);
+  api.setSecondary("", null);
+  api.setHint("Start a match, then tap a tile to play the chain.");
+  updateNote("Press Start to deal seven tiles.");
   render();
 
   return {
