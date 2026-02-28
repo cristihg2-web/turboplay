@@ -3874,7 +3874,7 @@ function createDominoes(root, api) {
     }
 
     const boardWidth = chainNode.clientWidth || root.clientWidth || window.innerWidth - 96;
-    const tilesPerRow = clamp(Math.floor(boardWidth / 74), 4, 6);
+    const tilesPerRow = clamp(Math.floor(boardWidth / 58), 5, 8);
 
     for (let start = 0; start < game.chain.length; start += tilesPerRow) {
       const row = document.createElement("div");
@@ -3885,7 +3885,7 @@ function createDominoes(root, api) {
 
       visibleTiles.forEach((tile) => {
         const node = document.createElement("div");
-        node.className = "domino-tile domino-tile-board";
+        node.className = `domino-tile domino-tile-board${tile.left === tile.right ? " is-double" : ""}`;
         node.innerHTML = buildTileMarkup({ a: tile.left, b: tile.right });
         row.appendChild(node);
       });
