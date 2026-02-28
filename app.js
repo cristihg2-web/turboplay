@@ -923,7 +923,7 @@ function createCometCatch(root, api) {
     comet.type = "button";
     comet.className = "comet-dot";
     comet.setAttribute("aria-label", "Comet");
-    const size = randomInt(52, 68);
+    const size = randomInt(58, 74);
     const maxX = Math.max(12, (stage.clientWidth || 320) - size - 12);
     const entry = {
       x: randomInt(12, maxX),
@@ -936,13 +936,19 @@ function createCometCatch(root, api) {
     comet.style.height = `${size}px`;
     comet.style.left = `${entry.x}px`;
     comet.style.top = `${entry.y}px`;
-    comet.addEventListener("click", () => {
+    const catchComet = (event) => {
+      event.preventDefault();
       if (!game.active) return;
       game.score += 1;
       api.setCurrent(game.score);
       api.setHint(`${game.score} hits.`);
       game.comets = game.comets.filter((item) => item !== entry);
       comet.remove();
+    };
+    comet.addEventListener("pointerdown", catchComet);
+    comet.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      catchComet(event);
     });
     stage.appendChild(comet);
     game.comets.push(entry);

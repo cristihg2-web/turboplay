@@ -561,6 +561,7 @@ button {
   border-radius: 999px;
   transform: translate(-50%, -50%);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
 }
 
 .target-stage::after,
@@ -573,6 +574,7 @@ button {
   border-radius: 999px;
   transform: translate(-50%, -50%);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
 }
 
 .target-dot,
@@ -584,6 +586,8 @@ button {
   border: 2px solid rgba(255, 191, 71, 0.24);
   background: radial-gradient(circle at center, rgba(255, 191, 71, 0.28), rgba(255, 255, 255, 0.94) 62%);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.26);
+  z-index: 1;
+  touch-action: manipulation;
 }
 
 .target-dot::after,
