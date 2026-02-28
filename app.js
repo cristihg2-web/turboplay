@@ -3157,19 +3157,47 @@ function createLockPick(root, api) {
   const track = stage.querySelector(".meter-track");
   const target = stage.querySelector(".meter-target");
   const cursor = stage.querySelector(".meter-cursor");
+  const infoValues = stage.querySelectorAll(".score-pill strong");
+  const tempoValue = infoValues[0];
+  const zoneValue = infoValues[1];
 
   const game = {
     running: false,
     chain: 0,
-    speed: 0.0036,
-    targetWidth: 132,
-    targetLeft: 90,
-    time: 0,
-    raf: 0
+    speed: 138,
+    targetWidth: 152,
+    targetLeft: 84,
+    cursorX: 0,
+    direction: 1,
+    raf: 0,
+    lastTime: 0
   };
 
   function trackWidth() {
     return track.clientWidth || 320;
+  }
+
+  function updateMeters() {
+    const widthRatio = game.targetWidth / Math.max(1, trackWidth());
+    let zoneLabel = "Wide";
+    if (widthRatio < 0.34) zoneLabel = "Steady";
+    if (widthRatio < 0.28) zoneLabel = "Tight";
+    if (widthRatio < 0.22) zoneLabel = "Sharp";
+
+    let tempoLabel = "Calm";
+    if (game.speed >= 170) tempoLabel = "Focus";
+    if (game.speed >= 215) tempoLabel = "Quick";
+    if (game.speed >= 265) tempoLabel = "Fast";
+
+    if (tempoValue) tempoValue.textContent = tempoLabel;
+    if (zoneValue) zoneValue.textContent = zoneLabel;
+  }
+
+  function applyDifficulty() {
+    const phase = Math.floor(game.chain / 3);
+    game.speed = Math.min(308, 138 + phase * 16 + Math.floor(game.chain / 8) * 8);
+    game.targetWidth = Math.max(74, 152 - phase * 8 - Math.floor(game.chain / 6) * 3);
+    updateMeters();
   }
 
   function positionTarget() {
@@ -3180,9 +3208,8 @@ function createLockPick(root, api) {
   }
 
   function renderCursor() {
-    const x = ((Math.sin(game.time) + 1) / 2) * (trackWidth() - 18);
-    cursor.style.left = `${x}px`;
-    return x;
+    cursor.style.left = `${game.cursorX}px`;
+    return game.cursorX;
   }
 
   function start() {
@@ -3190,12 +3217,14 @@ function createLockPick(root, api) {
     api.sound("start");
     game.running = true;
     game.chain = 0;
-    game.speed = 0.0036;
-    game.targetWidth = 132;
-    game.time = 0;
+    game.cursorX = 0;
+    game.direction = 1;
+    applyDifficulty();
     positionTarget();
+    renderCursor();
+    game.lastTime = performance.now();
     api.setCurrent(0);
-    api.setHint("Tap when the cursor crosses the zone.");
+    api.setHint("Start wide. Every few locks the pace tightens.");
     api.setPrimary("Restart", start);
     cancelAnimationFrame(game.raf);
     game.raf = requestAnimationFrame(loop);
@@ -3210,11 +3239,14 @@ function createLockPick(root, api) {
 
   function tapLock() {
     if (!game.running) return;
-    const cursorLeft = parseFloat(cursor.style.left || "0");
-    const center = cursorLeft + 9;
-    const inside = center >= game.targetLeft && center <= game.targetLeft + game.targetWidth;
+    const center = game.cursorX + 9;
+    const targetStart = game.targetLeft;
+    const targetEnd = game.targetLeft + game.targetWidth;
+    const missDistance = center < targetStart ? targetStart - center : center > targetEnd ? center - targetEnd : 0;
+    const inside = missDistance === 0;
+    const grace = Math.max(4, Math.round(game.targetWidth * 0.06));
 
-    if (!inside) {
+    if (!inside && missDistance > grace) {
       api.sound("fail");
       stop("Lock missed.");
       return;
@@ -3222,26 +3254,51 @@ function createLockPick(root, api) {
 
     game.chain += 1;
     api.sound("lock");
-    game.speed += 0.00045;
-    game.targetWidth = Math.max(54, game.targetWidth - 6);
+    applyDifficulty();
     api.setCurrent(game.chain);
     api.updateBest(game.chain);
-    api.setHint(`${game.chain} clean locks.`);
+    if (!inside) {
+      api.setHint(`${game.chain} locks. Close call.`);
+    } else if (game.chain < 4) {
+      api.setHint(`${game.chain} clean locks.`);
+    } else {
+      api.setHint(`${game.chain} locks. Pace rising.`);
+    }
     positionTarget();
   }
 
-  function loop() {
+  function updateCursor(delta) {
+    const distance = (game.speed * delta) / 1000;
+    const maxX = Math.max(0, trackWidth() - 18);
+    game.cursorX += distance * game.direction;
+
+    if (game.cursorX <= 0) {
+      game.cursorX = 0;
+      game.direction = 1;
+    } else if (game.cursorX >= maxX) {
+      game.cursorX = maxX;
+      game.direction = -1;
+    }
+  }
+
+  function loop(timestamp) {
+    const delta = Math.min(32, timestamp - (game.lastTime || timestamp - 16));
+    game.lastTime = timestamp;
+    if (game.running) {
+      updateCursor(delta);
+    }
     renderCursor();
     if (!game.running) return;
-    game.time += game.speed * 16;
     game.raf = requestAnimationFrame(loop);
   }
 
-  stage.addEventListener("click", (event) => {
+  stage.addEventListener("pointerdown", (event) => {
     if (event.target.closest(".touch-controls")) return;
+    event.preventDefault();
     tapLock();
   });
   api.setPrimary("Start", start);
+  updateMeters();
   positionTarget();
   renderCursor();
 
