@@ -643,10 +643,10 @@ function createPulsePads(root, api) {
     </div>
     <div class="pulse-cue" aria-live="polite">Press Start</div>
     <div class="pixel-pads">
-      <button class="pixel-pad" type="button" data-color="pink" data-index="0" aria-label="Pink"><span class="pulse-label">A</span><span class="pulse-name">Pink</span></button>
-      <button class="pixel-pad" type="button" data-color="cyan" data-index="1" aria-label="Cyan"><span class="pulse-label">B</span><span class="pulse-name">Cyan</span></button>
-      <button class="pixel-pad" type="button" data-color="amber" data-index="2" aria-label="Amber"><span class="pulse-label">C</span><span class="pulse-name">Amber</span></button>
-      <button class="pixel-pad" type="button" data-color="mint" data-index="3" aria-label="Mint"><span class="pulse-label">D</span><span class="pulse-name">Mint</span></button>
+      <button class="pixel-pad" type="button" data-color="pink" data-index="0" aria-label="Pink"></button>
+      <button class="pixel-pad" type="button" data-color="cyan" data-index="1" aria-label="Cyan"></button>
+      <button class="pixel-pad" type="button" data-color="amber" data-index="2" aria-label="Amber"></button>
+      <button class="pixel-pad" type="button" data-color="mint" data-index="3" aria-label="Mint"></button>
     </div>
   `;
   root.appendChild(stage);
