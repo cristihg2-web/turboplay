@@ -6,177 +6,68 @@
     <title>Turboplay</title>
     <meta
       name="description"
-      content="Turboplay is an offline arcade of short games for any device."
+      content="Turboplay is an offline synth arcade with ten fast games built for mobile, tablet, and laptop."
     />
-    <meta name="theme-color" content="#143a66" />
+    <meta name="theme-color" content="#0b1020" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="page">
-      <header class="topbar" aria-label="Site header">
+    <main class="arcade-shell">
+      <header class="appbar" aria-label="Turboplay header">
         <div class="brand">
           <div class="brand-mark">TP</div>
           <div class="brand-copy">
-            <p class="eyebrow">Offline arcade</p>
+            <p class="eyebrow">Offline synth arcade</p>
             <h1>Turboplay</h1>
           </div>
         </div>
-        <div class="topbar-actions">
-          <button class="button button-primary" type="button" data-jump="games">Play</button>
-          <button class="button button-secondary" type="button" data-install>Install</button>
-        </div>
+        <button class="action action-install" type="button" data-install>Install</button>
       </header>
 
-      <section class="quickbar" aria-label="Game summary">
-        <p class="quickline">Three short games. Offline. No account.</p>
-        <div class="quickstats">
-          <div class="quickstat">
-            <span>Best</span>
-            <strong data-stat="merge">0</strong>
+      <div class="statusline" aria-live="polite">
+        <span data-offline-status>Booting offline mode...</span>
+        <span data-install-status></span>
+      </div>
+
+      <nav class="game-rail" data-game-rail aria-label="Game picker"></nav>
+
+      <section class="cabinet" data-cabinet>
+        <div class="cabinet-head">
+          <div>
+            <p class="eyebrow" data-game-kicker></p>
+            <h2 data-game-title></h2>
           </div>
-          <div class="quickstat">
-            <span>Streak</span>
-            <strong data-stat="memory">0</strong>
-          </div>
-          <div class="quickstat">
-            <span>Radar</span>
-            <strong data-stat="radar">0</strong>
-          </div>
-          <div class="quickstat">
-            <span>Runs</span>
-            <strong data-stat="sessions">0</strong>
+          <div class="score-cluster">
+            <div class="score-box">
+              <span data-current-label></span>
+              <strong data-current-value>0</strong>
+            </div>
+            <div class="score-box">
+              <span data-best-label></span>
+              <strong data-best-value>0</strong>
+            </div>
           </div>
         </div>
-        <div class="systemline">
-          <span data-cache-status>Preparing offline mode.</span>
-          <span data-install-status></span>
+
+        <div class="cabinet-controls">
+          <button class="action action-primary" type="button" data-primary-action></button>
+          <button class="action action-secondary" type="button" data-secondary-action hidden></button>
+          <p class="hintline" data-game-hint></p>
+        </div>
+
+        <div class="stage-frame">
+          <div class="stage" data-stage></div>
         </div>
       </section>
 
-      <section class="games" id="games">
-        <div class="tabs" role="tablist" aria-label="Game selection">
-          <button class="tab is-active" type="button" role="tab" data-tab="merge">
-            Cabin 2048
-          </button>
-          <button class="tab" type="button" role="tab" data-tab="memory">
-            Aisle Lights
-          </button>
-          <button class="tab" type="button" role="tab" data-tab="radar">
-            Radar 30s
-          </button>
-        </div>
-
-        <section class="panel is-active" data-panel="merge">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Puzzle</p>
-              <h3>Cabin 2048</h3>
-              <p class="panel-mini">Swipe or arrow keys.</p>
-            </div>
-            <button class="button button-secondary" type="button" data-merge-reset>
-              New run
-            </button>
-          </div>
-          <div class="panel-copy">
-            <p class="game-status" data-merge-message>
-              Merge matching tiles to upgrade the cabin.
-            </p>
-          </div>
-
-          <div class="panel-play">
-            <div class="score-row">
-              <div class="score-pill">Score <strong data-merge-score>0</strong></div>
-              <div class="score-pill">Top tile <strong data-merge-tile>0</strong></div>
-              <div class="score-pill">Best <strong data-merge-best>0</strong></div>
-            </div>
-            <div class="merge-board" data-merge-board>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-              <div class="merge-cell" data-cell></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel" data-panel="memory">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Memory</p>
-              <h3>Aisle Lights</h3>
-              <p class="panel-mini">Watch. Repeat. Last longer.</p>
-            </div>
-            <button class="button button-secondary" type="button" data-memory-start>
-              Start
-            </button>
-          </div>
-          <div class="panel-copy">
-            <p class="game-status" data-memory-message>
-              Press start to see the first sequence.
-            </p>
-          </div>
-
-          <div class="panel-play">
-            <div class="score-row">
-              <div class="score-pill">Round <strong data-memory-round>0</strong></div>
-              <div class="score-pill">Best <strong data-memory-best>0</strong></div>
-            </div>
-            <div class="memory-grid">
-              <button class="memory-pad pad-coral" type="button" data-pad="0" aria-label="Coral"></button>
-              <button class="memory-pad pad-teal" type="button" data-pad="1" aria-label="Teal"></button>
-              <button class="memory-pad pad-amber" type="button" data-pad="2" aria-label="Amber"></button>
-              <button class="memory-pad pad-mint" type="button" data-pad="3" aria-label="Mint"></button>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel" data-panel="radar">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Reaction</p>
-              <h3>Radar 30s</h3>
-              <p class="panel-mini">Tap fast for 30 seconds.</p>
-            </div>
-            <button class="button button-secondary" type="button" data-radar-start>
-              Start
-            </button>
-          </div>
-          <div class="panel-copy">
-            <p class="game-status" data-radar-message>
-              Start the round and catch as many targets as you can.
-            </p>
-          </div>
-
-          <div class="panel-play">
-            <div class="score-row">
-              <div class="score-pill">Time <strong data-radar-time>30</strong></div>
-              <div class="score-pill">Score <strong data-radar-score>0</strong></div>
-              <div class="score-pill">Best <strong data-radar-best>0</strong></div>
-            </div>
-            <div class="radar-board" data-radar-board>
-              <div class="radar-sweep"></div>
-              <div class="radar-ring radar-ring-large"></div>
-              <div class="radar-ring radar-ring-medium"></div>
-              <div class="radar-ring radar-ring-small"></div>
-              <button class="radar-target" type="button" data-radar-target aria-label="Target"></button>
-              <span class="radar-hint">Tap the target</span>
-            </div>
-          </div>
-        </section>
-      </section>
+      <footer class="footer-strip" aria-label="Quick info">
+        <span>10 games</span>
+        <span>tap + swipe</span>
+        <span>offline</span>
+        <span>mobile first</span>
+      </footer>
     </main>
 
     <script src="./app.js" type="module"></script>

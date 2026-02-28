@@ -1,11 +1,11 @@
 {
   "name": "Turboplay",
   "short_name": "Turboplay",
-  "description": "Offline arcade with short games for any device.",
+  "description": "Offline synth arcade with ten fast games for any device.",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#edf6fb",
-  "theme_color": "#143a66",
+  "background_color": "#070c16",
+  "theme_color": "#0b1020",
   "icons": [
     {
       "src": "./icon.svg",
