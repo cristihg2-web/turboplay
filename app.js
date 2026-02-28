@@ -1677,10 +1677,10 @@ function createSnakeByte(root, api) {
 
   function draw() {
     ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = "#0f1730";
+    ctx.fillStyle = "#07101f";
     ctx.fillRect(0, 0, width, height);
 
-    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.strokeStyle = "rgba(120, 238, 190, 0.07)";
     for (let line = 0; line <= gridSize; line += 1) {
       ctx.beginPath();
       ctx.moveTo(line * cell, 0);
@@ -1692,15 +1692,127 @@ function createSnakeByte(root, api) {
       ctx.stroke();
     }
 
-    if (game.food) {
-      ctx.fillStyle = "#ffbf47";
-      ctx.fillRect(game.food.x * cell + 4, game.food.y * cell + 4, cell - 8, cell - 8);
+    function centerOf(node) {
+      return {
+        x: node.x * cell + cell / 2,
+        y: node.y * cell + cell / 2
+      };
     }
 
-    game.snake.forEach((node, index) => {
-      ctx.fillStyle = index === 0 ? "#76f0c2" : "#5ee1ff";
-      ctx.fillRect(node.x * cell + 3, node.y * cell + 3, cell - 6, cell - 6);
-    });
+    function drawOrb(x, y, radius, fill, glow) {
+      ctx.beginPath();
+      ctx.fillStyle = glow;
+      ctx.arc(x, y, radius * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = fill;
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(255,255,255,0.34)";
+      ctx.arc(x - radius * 0.28, y - radius * 0.28, radius * 0.32, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (game.food) {
+      const foodX = game.food.x * cell + cell / 2;
+      const foodY = game.food.y * cell + cell / 2;
+      drawOrb(foodX, foodY, cell * 0.24, "#ffcb54", "rgba(255, 190, 75, 0.18)");
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(255, 224, 140, 0.85)";
+      ctx.lineWidth = 1.5;
+      ctx.moveTo(foodX + cell * 0.08, foodY - cell * 0.08);
+      ctx.lineTo(foodX + cell * 0.22, foodY - cell * 0.22);
+      ctx.stroke();
+    }
+
+    const bodyRadius = cell * 0.28;
+    for (let index = game.snake.length - 1; index >= 1; index -= 1) {
+      const current = centerOf(game.snake[index]);
+      const previous = centerOf(game.snake[index - 1]);
+      const widthScale = Math.max(0.62, 1 - index * 0.035);
+      ctx.beginPath();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = bodyRadius * 2 * widthScale;
+      ctx.strokeStyle = index === 1 ? "#4de39c" : "#37c987";
+      ctx.moveTo(current.x, current.y);
+      ctx.lineTo(previous.x, previous.y);
+      ctx.stroke();
+    }
+
+    for (let index = game.snake.length - 1; index >= 1; index -= 1) {
+      const node = centerOf(game.snake[index]);
+      const radius = Math.max(cell * 0.14, bodyRadius * (1 - index * 0.03));
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(8, 18, 28, 0.34)";
+      ctx.arc(node.x, node.y + 2, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = index === game.snake.length - 1 ? "#31b675" : "#3ad98f";
+      ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(180, 255, 212, 0.28)";
+      ctx.arc(node.x - radius * 0.24, node.y - radius * 0.24, radius * 0.32, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (game.snake.length) {
+      const head = centerOf(game.snake[0]);
+      const direction = game.direction.x === 0 && game.direction.y === 0 ? { x: 1, y: 0 } : game.direction;
+      const headAngle =
+        direction.x === 1 ? 0 :
+        direction.x === -1 ? Math.PI :
+        direction.y === 1 ? Math.PI / 2 :
+        -Math.PI / 2;
+      const headRadius = bodyRadius * 1.22;
+
+      ctx.save();
+      ctx.translate(head.x, head.y);
+      ctx.rotate(headAngle);
+
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(8, 18, 28, 0.42)";
+      ctx.ellipse(0, 2, headRadius * 1.12, headRadius * 0.94, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = "#55efab";
+      ctx.ellipse(0, 0, headRadius * 1.1, headRadius * 0.92, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = "#b9ffd9";
+      ctx.ellipse(-headRadius * 0.28, -headRadius * 0.24, headRadius * 0.36, headRadius * 0.22, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = "#051018";
+      ctx.arc(headRadius * 0.28, -headRadius * 0.28, headRadius * 0.12, 0, Math.PI * 2);
+      ctx.arc(headRadius * 0.28, headRadius * 0.28, headRadius * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = "#ffffff";
+      ctx.arc(headRadius * 0.23, -headRadius * 0.32, headRadius * 0.04, 0, Math.PI * 2);
+      ctx.arc(headRadius * 0.23, headRadius * 0.24, headRadius * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (game.running) {
+        ctx.beginPath();
+        ctx.strokeStyle = "#ff6d74";
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.moveTo(headRadius * 0.98, 0);
+        ctx.lineTo(headRadius * 1.4, -3);
+        ctx.moveTo(headRadius * 0.98, 0);
+        ctx.lineTo(headRadius * 1.4, 3);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
   }
 
   function loop(timestamp) {
