@@ -74,6 +74,14 @@ const GAME_DEFS = [
     bestLabel: "Best Run"
   },
   {
+    id: "domino",
+    name: "Dominoes",
+    kicker: "Classic",
+    blurb: "Play the chain and empty your hand.",
+    currentLabel: "Score",
+    bestLabel: "Best Match"
+  },
+  {
     id: "brick",
     name: "Brick Pop",
     kicker: "Arcade",
@@ -801,6 +809,7 @@ const GAME_CREATORS = {
   stacker: createGridStacker,
   lock: createLockPick,
   dice: createPokerDice,
+  domino: createDominoes,
   brick: createBrickPop,
   orbit: createOrbitMatch
 };
@@ -3372,7 +3381,7 @@ function createPokerDice(root, api) {
         <strong data-dice-hand>High Dice</strong>
         <span data-dice-bonus>Hold bonus +0</span>
       </div>
-      <p data-dice-note>Tap dice to hold. Bank early for bonus points.</p>
+      <p data-dice-note>Roll up to three times. Hold what you like, then bank the hand.</p>
     </div>
     <div class="dice-paytable">
       ${PAYTABLE.map((entry) => `<div class="dice-paytable-row"><span>${entry.name}</span><strong>${entry.score}</strong></div>`).join("")}
@@ -3532,6 +3541,7 @@ function createPokerDice(root, api) {
     api.setCurrent(0);
     startRound(true);
     syncActions();
+    api.setHint("Roll up to three times, hold useful dice, then bank the hand.");
   }
 
   function stop(message) {
@@ -3614,6 +3624,609 @@ function createPokerDice(root, api) {
       if (event.key.toLowerCase() === "r") {
         event.preventDefault();
         rollDice(true);
+      }
+    }
+  };
+}
+
+function createDominoes(root, api) {
+  api.setCurrentLabel("Score");
+  api.setBestLabel("Best Match");
+
+  const PIP_MAP = {
+    0: [],
+    1: [4],
+    2: [0, 8],
+    3: [0, 4, 8],
+    4: [0, 2, 6, 8],
+    5: [0, 2, 4, 6, 8],
+    6: [0, 2, 3, 5, 6, 8]
+  };
+
+  const stage = document.createElement("div");
+  stage.className = "dom-stage domino-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Round <strong data-domino-round>1</strong></div>
+      <div class="score-pill">Boneyard <strong data-domino-boneyard>0</strong></div>
+      <div class="score-pill">CPU <strong data-domino-cpu-count>0</strong></div>
+    </div>
+    <div class="domino-board">
+      <div class="domino-rack domino-rack-cpu" data-domino-cpu></div>
+      <div class="domino-chain-panel">
+        <div class="domino-ends">
+          <div class="domino-end-chip">Left <strong data-domino-left>-</strong></div>
+          <div class="domino-end-chip">Right <strong data-domino-right>-</strong></div>
+        </div>
+        <div class="domino-chain" data-domino-chain></div>
+        <p class="domino-note" data-domino-note>Tap a tile to play it.</p>
+      </div>
+      <div class="domino-controls">
+        <button class="touch-button" type="button" data-domino-draw>Draw</button>
+        <button class="touch-button" type="button" data-domino-pass>Pass</button>
+        <button class="touch-button is-accent" type="button" data-domino-left-play hidden>Left</button>
+        <button class="touch-button is-accent" type="button" data-domino-right-play hidden>Right</button>
+      </div>
+      <div class="domino-rack domino-rack-player" data-domino-player></div>
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const roundValue = stage.querySelector("[data-domino-round]");
+  const boneyardValue = stage.querySelector("[data-domino-boneyard]");
+  const cpuCountValue = stage.querySelector("[data-domino-cpu-count]");
+  const leftValue = stage.querySelector("[data-domino-left]");
+  const rightValue = stage.querySelector("[data-domino-right]");
+  const cpuRack = stage.querySelector("[data-domino-cpu]");
+  const chainNode = stage.querySelector("[data-domino-chain]");
+  const playerRack = stage.querySelector("[data-domino-player]");
+  const noteValue = stage.querySelector("[data-domino-note]");
+  const drawButton = stage.querySelector("[data-domino-draw]");
+  const passButton = stage.querySelector("[data-domino-pass]");
+  const leftPlayButton = stage.querySelector("[data-domino-left-play]");
+  const rightPlayButton = stage.querySelector("[data-domino-right-play]");
+
+  const game = {
+    running: false,
+    round: 1,
+    score: 0,
+    playerHand: [],
+    cpuHand: [],
+    boneyard: [],
+    chain: [],
+    leftEnd: null,
+    rightEnd: null,
+    selectedId: null,
+    turn: "player",
+    passCount: 0,
+    cpuTimer: 0
+  };
+
+  function tileId(a, b) {
+    const low = Math.min(a, b);
+    const high = Math.max(a, b);
+    return `${low}-${high}`;
+  }
+
+  function createDeck() {
+    const deck = [];
+    for (let left = 0; left <= 6; left += 1) {
+      for (let right = left; right <= 6; right += 1) {
+        deck.push({ id: tileId(left, right), a: left, b: right });
+      }
+    }
+    return deck;
+  }
+
+  function shuffle(list) {
+    const next = [...list];
+    for (let index = next.length - 1; index > 0; index -= 1) {
+      const swapIndex = randomInt(0, index);
+      [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+    }
+    return next;
+  }
+
+  function sortHand(hand) {
+    hand.sort((first, second) => {
+      const firstDouble = first.a === first.b ? 1 : 0;
+      const secondDouble = second.a === second.b ? 1 : 0;
+      if (secondDouble !== firstDouble) return secondDouble - firstDouble;
+      return (second.a + second.b) - (first.a + first.b);
+    });
+  }
+
+  function pipTotal(hand) {
+    return hand.reduce((sum, tile) => sum + tile.a + tile.b, 0);
+  }
+
+  function getPlayableSides(tile) {
+    if (!game.chain.length) return ["start"];
+    const sides = [];
+    if (tile.a === game.leftEnd || tile.b === game.leftEnd) sides.push("left");
+    if (tile.a === game.rightEnd || tile.b === game.rightEnd) sides.push("right");
+    return sides;
+  }
+
+  function playerHasPlayable() {
+    return game.playerHand.some((tile) => getPlayableSides(tile).length > 0);
+  }
+
+  function cpuHasPlayable() {
+    return game.cpuHand.some((tile) => getPlayableSides(tile).length > 0);
+  }
+
+  function findBestStarter() {
+    let best = null;
+    const evaluate = (tile, owner) => {
+      const isDouble = tile.a === tile.b;
+      const sum = tile.a + tile.b;
+      const rank = isDouble ? 100 + sum : sum;
+      if (!best || rank > best.rank || (rank === best.rank && owner === "player")) {
+        best = { owner, tile, rank };
+      }
+    };
+
+    game.playerHand.forEach((tile) => evaluate(tile, "player"));
+    game.cpuHand.forEach((tile) => evaluate(tile, "cpu"));
+    return best;
+  }
+
+  function removeTile(hand, id) {
+    const index = hand.findIndex((tile) => tile.id === id);
+    if (index === -1) return null;
+    return hand.splice(index, 1)[0];
+  }
+
+  function orientTile(tile, side) {
+    if (side === "start" || !game.chain.length) {
+      return { id: tile.id, left: tile.a, right: tile.b };
+    }
+
+    if (side === "left") {
+      if (tile.b === game.leftEnd) {
+        return { id: tile.id, left: tile.a, right: tile.b };
+      }
+      return { id: tile.id, left: tile.b, right: tile.a };
+    }
+
+    if (tile.a === game.rightEnd) {
+      return { id: tile.id, left: tile.a, right: tile.b };
+    }
+    return { id: tile.id, left: tile.b, right: tile.a };
+  }
+
+  function buildTileMarkup(tile, faceDown = false) {
+    const halfMarkup = (value) => `
+      <span class="domino-half" aria-hidden="true">
+        ${Array.from({ length: 9 }, (_, index) => `<span class="domino-pip${PIP_MAP[value].includes(index) ? " is-on" : ""}"></span>`).join("")}
+      </span>
+    `;
+
+    if (faceDown) {
+      return `
+        <span class="domino-half domino-half-back"></span>
+        <span class="domino-divider" aria-hidden="true"></span>
+        <span class="domino-half domino-half-back"></span>
+      `;
+    }
+
+    return `
+      ${halfMarkup(tile.a ?? tile.left)}
+      <span class="domino-divider" aria-hidden="true"></span>
+      ${halfMarkup(tile.b ?? tile.right)}
+    `;
+  }
+
+  function renderCpuRack() {
+    cpuRack.innerHTML = "";
+    game.cpuHand.forEach((tile, index) => {
+      const back = document.createElement("div");
+      back.className = "domino-tile domino-tile-back";
+      back.setAttribute("aria-label", `CPU tile ${index + 1}`);
+      back.innerHTML = buildTileMarkup(tile, true);
+      cpuRack.appendChild(back);
+    });
+  }
+
+  function renderChain() {
+    chainNode.innerHTML = "";
+    const visible = game.chain.length > 8 ? game.chain.slice(-8) : game.chain;
+    if (game.chain.length > visible.length) {
+      const more = document.createElement("div");
+      more.className = "domino-more";
+      more.textContent = "…";
+      chainNode.appendChild(more);
+    }
+
+    visible.forEach((tile) => {
+      const node = document.createElement("div");
+      node.className = "domino-tile domino-tile-board";
+      node.innerHTML = buildTileMarkup({ a: tile.left, b: tile.right });
+      chainNode.appendChild(node);
+    });
+  }
+
+  function renderPlayerRack() {
+    playerRack.innerHTML = "";
+    sortHand(game.playerHand);
+    game.playerHand.forEach((tile, index) => {
+      const playableSides = getPlayableSides(tile);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "domino-tile domino-tile-player";
+      if (game.selectedId === tile.id) button.classList.add("is-selected");
+      if (playableSides.length) button.classList.add("is-playable");
+      if (!game.running || game.turn !== "player") button.classList.add("is-disabled");
+      button.setAttribute("aria-label", `Tile ${index + 1}: ${tile.a}-${tile.b}`);
+      button.innerHTML = buildTileMarkup(tile);
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        selectPlayerTile(tile.id);
+      });
+      playerRack.appendChild(button);
+    });
+  }
+
+  function renderControls() {
+    const selectedTile = game.playerHand.find((tile) => tile.id === game.selectedId);
+    const selectedSides = selectedTile ? getPlayableSides(selectedTile) : [];
+    const canDraw = game.running && game.turn === "player" && !playerHasPlayable() && game.boneyard.length > 0;
+    const canPass = game.running && game.turn === "player" && !playerHasPlayable() && game.boneyard.length === 0;
+
+    drawButton.disabled = !canDraw;
+    passButton.disabled = !canPass;
+
+    leftPlayButton.hidden = !(selectedSides.includes("left") && selectedSides.length > 1);
+    rightPlayButton.hidden = !(selectedSides.includes("right") && selectedSides.length > 1);
+  }
+
+  function renderStatus() {
+    roundValue.textContent = String(game.round);
+    boneyardValue.textContent = String(game.boneyard.length);
+    cpuCountValue.textContent = String(game.cpuHand.length);
+    leftValue.textContent = game.leftEnd ?? "-";
+    rightValue.textContent = game.rightEnd ?? "-";
+  }
+
+  function render() {
+    renderStatus();
+    renderCpuRack();
+    renderChain();
+    renderPlayerRack();
+    renderControls();
+  }
+
+  function clearCpuTimer() {
+    if (game.cpuTimer) {
+      window.clearTimeout(game.cpuTimer);
+      game.cpuTimer = 0;
+    }
+  }
+
+  function updateNote(text) {
+    noteValue.textContent = text;
+  }
+
+  function playTile(owner, id, side) {
+    const hand = owner === "player" ? game.playerHand : game.cpuHand;
+    const tile = removeTile(hand, id);
+    if (!tile) return false;
+
+    const oriented = orientTile(tile, side);
+    if (!game.chain.length || side === "start") {
+      game.chain = [oriented];
+    } else if (side === "left") {
+      game.chain.unshift(oriented);
+    } else {
+      game.chain.push(oriented);
+    }
+
+    game.leftEnd = game.chain[0].left;
+    game.rightEnd = game.chain[game.chain.length - 1].right;
+    game.selectedId = null;
+    game.passCount = 0;
+    sortHand(game.playerHand);
+    sortHand(game.cpuHand);
+    api.sound(tile.a === tile.b ? "lock" : "brick");
+    render();
+    return true;
+  }
+
+  function scoreRound(message, gained) {
+    game.score += gained;
+    api.setCurrent(game.score);
+    api.updateBest(game.score);
+    api.sound("level");
+    api.setHint(`${message} +${gained} points.`);
+    game.round += 1;
+    startRound(false);
+  }
+
+  function stop(message) {
+    game.running = false;
+    clearCpuTimer();
+    api.updateBest(game.score);
+    api.sound("fail");
+    api.setHint(message);
+    api.setPrimary("Start", start);
+    api.setSecondary("", null);
+    render();
+  }
+
+  function maybeResolveRound() {
+    if (!game.running) return true;
+
+    if (game.playerHand.length === 0) {
+      scoreRound("Hand cleared", pipTotal(game.cpuHand));
+      return true;
+    }
+
+    if (game.cpuHand.length === 0) {
+      stop("CPU emptied its hand.");
+      return true;
+    }
+
+    if (game.passCount >= 2 && game.boneyard.length === 0) {
+      const playerPips = pipTotal(game.playerHand);
+      const cpuPips = pipTotal(game.cpuHand);
+      if (playerPips < cpuPips) {
+        scoreRound("Blocked round won", cpuPips - playerPips);
+        return true;
+      }
+      if (playerPips === cpuPips) {
+        api.sound("round");
+        api.setHint("Blocked draw. Redealing.");
+        game.round += 1;
+        startRound(false);
+        return true;
+      }
+      stop("Blocked round lost. CPU held fewer pips.");
+      return true;
+    }
+
+    return false;
+  }
+
+  function chooseCpuMove() {
+    const playable = game.cpuHand
+      .map((tile) => ({ tile, sides: getPlayableSides(tile) }))
+      .filter((entry) => entry.sides.length > 0);
+    if (!playable.length) return null;
+
+    const supportCount = (value, tileIdToSkip) =>
+      game.cpuHand.filter((tile) => tile.id !== tileIdToSkip && (tile.a === value || tile.b === value)).length;
+
+    let best = null;
+    playable.forEach((entry) => {
+      entry.sides.forEach((side) => {
+        const oriented = orientTile(entry.tile, side);
+        const openValue = side === "left" ? oriented.left : oriented.right;
+        const score =
+          (entry.tile.a + entry.tile.b) * 3 +
+          (entry.tile.a === entry.tile.b ? 5 : 0) +
+          supportCount(openValue, entry.tile.id) * 4;
+        if (!best || score > best.score) {
+          best = { id: entry.tile.id, side, score };
+        }
+      });
+    });
+
+    return best;
+  }
+
+  function beginPlayerTurn(message) {
+    if (!game.running) return;
+    game.turn = "player";
+    updateNote(message || (playerHasPlayable() ? "Tap a playable tile. If both ends fit, choose a side." : "No match in hand. Draw from the boneyard."));
+    render();
+  }
+
+  function cpuTurn() {
+    clearCpuTimer();
+    if (!game.running || game.turn !== "cpu") return;
+
+    while (!cpuHasPlayable() && game.boneyard.length > 0) {
+      game.cpuHand.push(game.boneyard.pop());
+      api.sound("launch");
+    }
+    sortHand(game.cpuHand);
+
+    const move = chooseCpuMove();
+    if (!move) {
+      game.passCount += 1;
+      updateNote("CPU passes.");
+      render();
+      if (maybeResolveRound()) return;
+      beginPlayerTurn("CPU passed. Your turn.");
+      return;
+    }
+
+    playTile("cpu", move.id, move.side);
+    updateNote(`CPU played ${move.side}.`);
+    if (maybeResolveRound()) return;
+    beginPlayerTurn("Your turn.");
+  }
+
+  function queueCpuTurn(message = "CPU turn.") {
+    if (!game.running) return;
+    game.turn = "cpu";
+    updateNote(message);
+    render();
+    clearCpuTimer();
+    game.cpuTimer = window.setTimeout(cpuTurn, 520);
+  }
+
+  function startRound(isNewMatch) {
+    clearCpuTimer();
+    let deck = shuffle(createDeck());
+    game.playerHand = deck.splice(0, 7);
+    game.cpuHand = deck.splice(0, 7);
+    game.boneyard = deck;
+    game.chain = [];
+    game.leftEnd = null;
+    game.rightEnd = null;
+    game.selectedId = null;
+    game.passCount = 0;
+    sortHand(game.playerHand);
+    sortHand(game.cpuHand);
+
+    const starter = findBestStarter();
+    if (starter) {
+      playTile(starter.owner, starter.tile.id, "start");
+      if (starter.owner === "player") {
+        queueCpuTurn(isNewMatch ? `You opened with ${starter.tile.a}-${starter.tile.b}. CPU turn.` : `Round ${game.round}. You opened. CPU turn.`);
+        api.setHint("Match ends when you lose a hand. Keep scoring while you survive.");
+      } else {
+        beginPlayerTurn(isNewMatch ? `CPU opened with ${starter.tile.a}-${starter.tile.b}.` : `Round ${game.round}. CPU opened.`);
+        api.setHint("Tap a tile to play it. Draw only when you have no move.");
+      }
+    }
+  }
+
+  function start() {
+    api.countPlay();
+    api.sound("start");
+    game.running = true;
+    game.round = 1;
+    game.score = 0;
+    api.setCurrent(0);
+    api.setPrimary("Restart", start);
+    api.setSecondary("", null);
+    startRound(true);
+  }
+
+  function selectPlayerTile(id) {
+    if (!game.running || game.turn !== "player") return;
+    if (game.selectedId === id) {
+      game.selectedId = null;
+      updateNote("Selection cleared.");
+      render();
+      return;
+    }
+    const tile = game.playerHand.find((entry) => entry.id === id);
+    if (!tile) return;
+    const sides = getPlayableSides(tile);
+
+    if (!sides.length) {
+      api.sound("deny");
+      updateNote("That tile does not fit either end.");
+      render();
+      return;
+    }
+
+    if (sides.length === 1) {
+      playTile("player", id, sides[0]);
+      updateNote(`You played ${sides[0]}.`);
+      if (maybeResolveRound()) return;
+      queueCpuTurn("CPU turn.");
+      return;
+    }
+
+    game.selectedId = id;
+    updateNote("That tile fits both ends. Choose left or right.");
+    api.sound("ui");
+    render();
+  }
+
+  function playSelectedSide(side) {
+    if (!game.running || game.turn !== "player" || !game.selectedId) return;
+    playTile("player", game.selectedId, side);
+    updateNote(`You played ${side}.`);
+    if (maybeResolveRound()) return;
+    queueCpuTurn("CPU turn.");
+  }
+
+  function drawForPlayer() {
+    if (!game.running || game.turn !== "player") return;
+    if (playerHasPlayable()) {
+      updateNote("You already have a playable tile.");
+      api.sound("deny");
+      return;
+    }
+    if (!game.boneyard.length) {
+      updateNote("Boneyard is empty. Pass if you still cannot play.");
+      api.sound("deny");
+      render();
+      return;
+    }
+
+    const drawn = game.boneyard.pop();
+    game.playerHand.push(drawn);
+    sortHand(game.playerHand);
+    api.sound("launch");
+    const playable = getPlayableSides(drawn).length > 0;
+    updateNote(playable ? `Drew ${drawn.a}-${drawn.b}. It can play.` : `Drew ${drawn.a}-${drawn.b}. Still no fit.`);
+    render();
+  }
+
+  function passPlayer() {
+    if (!game.running || game.turn !== "player") return;
+    if (playerHasPlayable()) {
+      updateNote("You can still play a tile.");
+      api.sound("deny");
+      return;
+    }
+    if (game.boneyard.length > 0) {
+      updateNote("Draw first. The boneyard still has tiles.");
+      api.sound("deny");
+      return;
+    }
+
+    game.passCount += 1;
+    updateNote("You pass.");
+    render();
+    if (maybeResolveRound()) return;
+    queueCpuTurn("CPU turn after your pass.");
+  }
+
+  drawButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    drawForPlayer();
+  });
+  passButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    passPlayer();
+  });
+  leftPlayButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    playSelectedSide("left");
+  });
+  rightPlayButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    playSelectedSide("right");
+  });
+
+  render();
+
+  return {
+    destroy() {
+      clearCpuTimer();
+    },
+    onKey(event) {
+      if (event.key.toLowerCase() === "d") {
+        event.preventDefault();
+        drawForPlayer();
+      }
+      if (event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        passPlayer();
+      }
+      if (event.key.toLowerCase() === "l") {
+        event.preventDefault();
+        playSelectedSide("left");
+      }
+      if (event.key.toLowerCase() === "r") {
+        event.preventDefault();
+        playSelectedSide("right");
+      }
+      if (/^[1-7]$/.test(event.key)) {
+        const index = Number(event.key) - 1;
+        const tile = game.playerHand[index];
+        if (tile) {
+          event.preventDefault();
+          selectPlayerTile(tile.id);
+        }
       }
     }
   };
