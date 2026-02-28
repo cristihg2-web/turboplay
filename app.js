@@ -3189,10 +3189,20 @@ function createBrickPop(root, api) {
   const paddleBaseWidth = 96;
   const paddleY = height - 28;
   const dropTable = [
-    { type: "extra", weight: 0.22 },
-    { type: "power", weight: 0.24 },
-    { type: "wide", weight: 0.3 },
-    { type: "narrow", weight: 0.24 }
+    { type: "extra", weight: 0.18 },
+    { type: "power", weight: 0.2 },
+    { type: "wide", weight: 0.22 },
+    { type: "narrow", weight: 0.18 },
+    { type: "slow", weight: 0.12 },
+    { type: "magnet", weight: 0.1 }
+  ];
+  const patternLibrary = [
+    ["11111", "11111", "10101", "11111", "01110", "11111", "10101"],
+    ["00100", "01110", "11111", "01110", "00100", "01110", "11111"],
+    ["11111", "10001", "11111", "01110", "11111", "10001", "11111"],
+    ["10101", "11111", "01010", "11111", "10101", "11111", "01010"],
+    ["11011", "01110", "00100", "01110", "11011", "01110", "00100"],
+    ["11111", "11011", "10101", "01110", "10101", "11011", "11111"]
   ];
 
   const game = {
@@ -3201,10 +3211,13 @@ function createBrickPop(root, api) {
     balls: [],
     bricks: [],
     items: [],
+    effects: [],
     score: 0,
     round: 1,
     roundDelay: 0,
     powerHitsRemaining: 0,
+    slowTime: 0,
+    magnetTime: 0,
     running: false,
     raf: 0,
     lastTime: 0
@@ -3240,8 +3253,10 @@ function createBrickPop(root, api) {
     const bricks = [];
     const colors = ["#ffbf47", "#ff6ca8", "#5ee1ff", "#76f0c2"];
     const rows = Math.min(7, 5 + Math.floor((game.round - 1) / 2));
+    const pattern = patternLibrary[(game.round - 1) % patternLibrary.length];
     for (let row = 0; row < rows; row += 1) {
       for (let column = 0; column < 5; column += 1) {
+        if (pattern[row][column] !== "1") continue;
         const brick = {
           x: 18 + column * 58,
           y: 22 + row * 30,
@@ -3258,7 +3273,8 @@ function createBrickPop(root, api) {
   }
 
   function targetBallSpeed() {
-    return 196 + (game.round - 1) * 14;
+    const base = 196 + (game.round - 1) * 14;
+    return base * (game.slowTime > 0 ? 0.82 : 1);
   }
 
   function createBall(x = width / 2, y = height - 74, direction = 1) {
@@ -3303,10 +3319,13 @@ function createBrickPop(root, api) {
     game.paddleX = width / 2 - game.paddleWidth / 2;
     game.balls = [];
     game.items = [];
+    game.effects = [];
     game.score = 0;
     game.round = 1;
     game.roundDelay = 0;
     game.powerHitsRemaining = 0;
+    game.slowTime = 0;
+    game.magnetTime = 0;
     game.running = true;
     game.lastTime = performance.now();
     api.setCurrent(0);
@@ -3340,7 +3359,9 @@ function createBrickPop(root, api) {
       extra: { shell: "#76f0c2", core: "#ffffff" },
       power: { shell: "#ffbf47", core: "#fff0ad" },
       wide: { shell: "#5ee1ff", core: "#eaf9ff" },
-      narrow: { shell: "#ff6ca8", core: "#ffe5f0" }
+      narrow: { shell: "#ff6ca8", core: "#ffe5f0" },
+      slow: { shell: "#8f93ff", core: "#eef0ff" },
+      magnet: { shell: "#ff8f63", core: "#fff0de" }
     }[item.type];
 
     ctx.save();
@@ -3380,17 +3401,37 @@ function createBrickPop(root, api) {
       ctx.lineTo(-1, 5);
       ctx.closePath();
       ctx.fill();
-    } else {
+    } else if (item.type === "slow") {
+      ctx.fillRect(-6, -7, 4, 14);
+      ctx.fillRect(2, -7, 4, 14);
       ctx.beginPath();
-      ctx.moveTo(8, 0);
-      ctx.lineTo(1, -5);
-      ctx.lineTo(1, -2);
-      ctx.lineTo(-8, -2);
-      ctx.lineTo(-8, 2);
-      ctx.lineTo(1, 2);
-      ctx.lineTo(1, 5);
-      ctx.closePath();
-      ctx.fill();
+      ctx.moveTo(-8, -6);
+      ctx.lineTo(8, -6);
+      ctx.moveTo(-8, 6);
+      ctx.lineTo(8, 6);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = palette.core;
+      ctx.stroke();
+    } else {
+      if (item.type === "narrow") {
+        ctx.beginPath();
+        ctx.moveTo(8, 0);
+        ctx.lineTo(1, -5);
+        ctx.lineTo(1, -2);
+        ctx.lineTo(-8, -2);
+        ctx.lineTo(-8, 2);
+        ctx.lineTo(1, 2);
+        ctx.lineTo(1, 5);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.arc(-4, 0, 4, Math.PI * 0.5, Math.PI * 1.5);
+        ctx.arc(4, 0, 4, -Math.PI * 0.5, Math.PI * 0.5);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = palette.core;
+        ctx.stroke();
+      }
     }
     ctx.restore();
   }
@@ -3428,6 +3469,59 @@ function createBrickPop(root, api) {
       ctx.fillStyle = "#ffd86c";
       ctx.fillText(`P${game.powerHitsRemaining}`, 102, height - 12);
     }
+    if (game.slowTime > 0) {
+      ctx.fillStyle = "#aab0ff";
+      ctx.fillText("S", 142, height - 12);
+    }
+    if (game.magnetTime > 0) {
+      ctx.fillStyle = "#ffb18d";
+      ctx.fillText("M", 160, height - 12);
+    }
+  }
+
+  function drawEffects() {
+    game.effects.forEach((effect) => {
+      const lifeRatio = effect.life / effect.maxLife;
+      if (effect.kind === "spark") {
+        ctx.fillStyle = effect.color.replace("ALPHA", String(lifeRatio));
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, effect.size * (0.6 + lifeRatio * 0.5), 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = effect.color.replace("ALPHA", String(lifeRatio * 0.9));
+        ctx.lineWidth = 2 + (1 - lifeRatio) * 2;
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, effect.radius * (1.2 - lifeRatio * 0.25), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    });
+  }
+
+  function spawnBurst(x, y, tint) {
+    for (let index = 0; index < 6; index += 1) {
+      const angle = (Math.PI * 2 * index) / 6 + Math.random() * 0.34;
+      const speed = 26 + Math.random() * 54;
+      game.effects.push({
+        kind: "spark",
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 2,
+        life: 0.32,
+        maxLife: 0.32,
+        color: tint
+      });
+    }
+    game.effects.push({
+      kind: "ring",
+      x,
+      y,
+      radius: 14,
+      life: 0.24,
+      maxLife: 0.24,
+      color: tint
+    });
   }
 
   function draw() {
@@ -3441,6 +3535,7 @@ function createBrickPop(root, api) {
     });
 
     game.items.forEach(drawItem);
+    drawEffects();
     drawPaddle();
     game.balls.forEach(drawBall);
     drawHud();
@@ -3482,6 +3577,7 @@ function createBrickPop(root, api) {
     if (brick.drop) {
       game.items.push({ ...brick.drop });
     }
+    spawnBurst(brick.x + brick.width / 2, brick.y + brick.height / 2, "rgba(255, 214, 132, ALPHA)");
 
     api.sound("brick");
     game.score += 10;
@@ -3507,8 +3603,26 @@ function createBrickPop(root, api) {
 
     if (item.type === "power") {
       game.powerHitsRemaining += 2;
+      spawnBurst(item.x, item.y, "rgba(255, 214, 132, ALPHA)");
       api.sound("collect");
       api.setHint(`Power shot x${game.powerHitsRemaining}.`);
+      return;
+    }
+
+    if (item.type === "slow") {
+      game.slowTime = Math.max(game.slowTime, 9);
+      retuneBallSpeeds();
+      spawnBurst(item.x, item.y, "rgba(168, 176, 255, ALPHA)");
+      api.sound("collect");
+      api.setHint("Ball speed reduced.");
+      return;
+    }
+
+    if (item.type === "magnet") {
+      game.magnetTime = Math.max(game.magnetTime, 10);
+      spawnBurst(item.x, item.y, "rgba(255, 177, 141, ALPHA)");
+      api.sound("collect");
+      api.setHint("Magnet paddle active.");
       return;
     }
 
@@ -3517,6 +3631,7 @@ function createBrickPop(root, api) {
     game.paddleWidth = clamp(game.paddleWidth * factor, paddleBaseWidth * 0.7, paddleBaseWidth * 1.5);
     game.paddleX = center - game.paddleWidth / 2;
     clampPaddle();
+    spawnBurst(item.x, item.y, item.type === "wide" ? "rgba(123, 233, 255, ALPHA)" : "rgba(255, 131, 182, ALPHA)");
     api.sound(item.type === "wide" ? "collect" : "deny");
     api.setHint(item.type === "wide" ? "Paddle widened." : "Paddle reduced.");
   }
@@ -3543,6 +3658,10 @@ function createBrickPop(root, api) {
   function updateBalls(delta) {
     const seconds = delta / 1000;
     game.balls = game.balls.filter((ball) => {
+      if (game.magnetTime > 0 && ball.vy > 0 && ball.y >= paddleY - 96) {
+        ball.vx += (game.paddleX + game.paddleWidth / 2 - ball.x) * 4.8 * seconds;
+      }
+
       ball.x += (ball.vx * seconds);
       ball.y += (ball.vy * seconds);
 
@@ -3562,8 +3681,8 @@ function createBrickPop(root, api) {
       if (
         ball.y + ball.radius >= paddleY &&
         ball.y - ball.radius <= paddleY + 10 &&
-        ball.x >= game.paddleX &&
-        ball.x <= game.paddleX + game.paddleWidth &&
+        ball.x >= game.paddleX - (game.magnetTime > 0 ? 10 : 0) &&
+        ball.x <= game.paddleX + game.paddleWidth + (game.magnetTime > 0 ? 10 : 0) &&
         ball.vy > 0
       ) {
         bounceOffPaddle(ball);
@@ -3586,9 +3705,33 @@ function createBrickPop(root, api) {
     });
   }
 
+  function updateEffects(delta) {
+    const seconds = delta / 1000;
+    game.effects = game.effects.filter((effect) => {
+      effect.life -= seconds;
+      if (effect.kind === "spark") {
+        effect.x += effect.vx * seconds;
+        effect.y += effect.vy * seconds;
+        effect.vx *= 0.97;
+        effect.vy = effect.vy * 0.97 + 12 * seconds;
+      }
+      return effect.life > 0;
+    });
+  }
+
   function update(delta) {
+    const seconds = delta / 1000;
+    const hadSlow = game.slowTime > 0;
+    game.slowTime = Math.max(0, game.slowTime - seconds);
+    game.magnetTime = Math.max(0, game.magnetTime - seconds);
+    if (hadSlow && game.slowTime === 0) {
+      retuneBallSpeeds();
+    }
+    updateEffects(delta);
+
     if (game.roundDelay > 0) {
       game.roundDelay = Math.max(0, game.roundDelay - delta / 1000);
+      updateItems(delta);
       if (game.roundDelay === 0) {
         startRound(false);
       }
