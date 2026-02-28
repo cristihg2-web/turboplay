@@ -621,6 +621,243 @@ button {
   z-index: 2;
 }
 
+.radar-stage {
+  min-height: 390px;
+  background:
+    radial-gradient(circle at center, rgba(108, 255, 176, 0.18), transparent 32%),
+    radial-gradient(circle at center, rgba(7, 28, 20, 0.82), rgba(2, 10, 10, 0.96) 72%),
+    linear-gradient(180deg, #062019, #020909);
+  box-shadow:
+    inset 0 0 0 1px rgba(118, 240, 194, 0.08),
+    inset 0 0 48px rgba(19, 179, 109, 0.12);
+}
+
+.radar-stage::before {
+  width: 88%;
+  height: 88%;
+  border-color: rgba(118, 240, 194, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(118, 240, 194, 0.05),
+    inset 0 0 18px rgba(118, 240, 194, 0.08);
+}
+
+.radar-stage::after {
+  width: 62%;
+  height: 62%;
+  border-color: rgba(118, 240, 194, 0.12);
+}
+
+.radar-stage .stage-chip {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  border-color: rgba(118, 240, 194, 0.18);
+  background: rgba(118, 240, 194, 0.08);
+  color: #bfffdc;
+}
+
+.radar-status {
+  left: auto !important;
+  right: 12px;
+}
+
+.radar-grid,
+.radar-sweep,
+.radar-crosshair,
+.radar-blips {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.radar-grid::before,
+.radar-grid::after {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border-radius: 999px;
+}
+
+.radar-grid::before {
+  background:
+    radial-gradient(circle at center, transparent 0 23%, rgba(118, 240, 194, 0.11) 23.4%, transparent 24% 47%, rgba(118, 240, 194, 0.1) 47.4%, transparent 48% 71%, rgba(118, 240, 194, 0.08) 71.4%, transparent 72%);
+  opacity: 0.92;
+}
+
+.radar-grid::after {
+  border: 1px solid rgba(118, 240, 194, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(118, 240, 194, 0.04),
+    0 0 18px rgba(118, 240, 194, 0.05);
+}
+
+.radar-crosshair::before,
+.radar-crosshair::after {
+  content: "";
+  position: absolute;
+  background: linear-gradient(180deg, transparent, rgba(118, 240, 194, 0.12), transparent);
+  opacity: 0.75;
+}
+
+.radar-crosshair::before {
+  top: 8%;
+  bottom: 8%;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.radar-crosshair::after {
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.radar-sweep {
+  inset: 7%;
+  border-radius: 999px;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg 300deg,
+      rgba(118, 240, 194, 0.03) 300deg,
+      rgba(118, 240, 194, 0.12) 325deg,
+      rgba(118, 240, 194, 0.28) 346deg,
+      rgba(118, 240, 194, 0.06) 360deg
+    );
+  mix-blend-mode: screen;
+  opacity: 0.92;
+  animation: radar-spin 3.6s linear infinite;
+}
+
+.radar-stage:not(.is-live) .radar-sweep {
+  animation-play-state: paused;
+  opacity: 0.5;
+}
+
+.radar-blip {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(118, 240, 194, 0.82);
+  box-shadow: 0 0 18px rgba(118, 240, 194, 0.3);
+  transform: translate(-50%, -50%) scale(var(--scale));
+  animation: radar-blip 1.9s ease-in-out infinite;
+  animation-delay: var(--delay);
+  opacity: 0.36;
+}
+
+.radar-lock {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: rotate(var(--target-tilt, 0deg));
+  z-index: 2;
+}
+
+.radar-lock::after {
+  content: none;
+}
+
+.radar-lock__ring,
+.radar-lock__core,
+.radar-lock__spark {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.radar-lock__ring--outer {
+  inset: 8%;
+  border: 2px solid rgba(255, 105, 159, 0.96);
+  box-shadow:
+    0 0 0 2px rgba(255, 105, 159, 0.14),
+    0 0 22px rgba(255, 105, 159, 0.36);
+  animation: radar-lock-pulse 0.92s ease-in-out infinite;
+}
+
+.radar-lock__ring--mid {
+  inset: 25%;
+  border: 2px solid rgba(255, 204, 109, 0.96);
+  box-shadow: 0 0 18px rgba(255, 191, 71, 0.28);
+}
+
+.radar-lock__core {
+  width: 26%;
+  height: 26%;
+  background:
+    radial-gradient(circle at 35% 35%, #fff7da, #ffbf47 55%, #ff5c8f 100%);
+  box-shadow:
+    0 0 24px rgba(255, 191, 71, 0.42),
+    0 0 34px rgba(255, 92, 143, 0.22);
+}
+
+.radar-lock__spark {
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(90deg, transparent 47%, rgba(255, 255, 255, 0.44) 50%, transparent 53%),
+    linear-gradient(0deg, transparent 47%, rgba(255, 255, 255, 0.44) 50%, transparent 53%);
+  opacity: 0.72;
+}
+
+.radar-ping {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(118, 240, 194, 0.92);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: radar-ping 0.52s ease-out forwards;
+  z-index: 2;
+}
+
+@keyframes radar-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes radar-lock-pulse {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.88;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+@keyframes radar-blip {
+  0%, 100% {
+    opacity: 0.24;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes radar-ping {
+  from {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(4.8);
+  }
+}
+
 .meter-stage {
   display: grid;
   place-items: center;

@@ -797,15 +797,37 @@ function createRadarRush(root, api) {
   api.setBestLabel("Best Hits");
 
   const stage = document.createElement("div");
-  stage.className = "target-stage";
+  stage.className = "target-stage radar-stage";
   const badge = document.createElement("div");
   badge.className = "stage-chip";
   badge.textContent = "24s";
+  const status = document.createElement("div");
+  status.className = "stage-chip radar-status";
+  status.textContent = "Scan";
+  const grid = document.createElement("div");
+  grid.className = "radar-grid";
+  const sweep = document.createElement("div");
+  sweep.className = "radar-sweep";
+  const crosshair = document.createElement("div");
+  crosshair.className = "radar-crosshair";
+  const blips = document.createElement("div");
+  blips.className = "radar-blips";
   const target = document.createElement("button");
   target.type = "button";
-  target.className = "target-dot";
+  target.className = "target-dot radar-lock";
   target.setAttribute("aria-label", "Target");
+  target.innerHTML = `
+    <span class="radar-lock__ring radar-lock__ring--outer"></span>
+    <span class="radar-lock__ring radar-lock__ring--mid"></span>
+    <span class="radar-lock__core"></span>
+    <span class="radar-lock__spark"></span>
+  `;
+  stage.appendChild(grid);
+  stage.appendChild(sweep);
+  stage.appendChild(crosshair);
+  stage.appendChild(blips);
   stage.appendChild(badge);
+  stage.appendChild(status);
   stage.appendChild(target);
   root.appendChild(stage);
 
@@ -818,15 +840,38 @@ function createRadarRush(root, api) {
     moveTimer: null
   };
 
+  function seedBlips() {
+    blips.innerHTML = "";
+    for (let index = 0; index < 8; index += 1) {
+      const blip = document.createElement("span");
+      blip.className = "radar-blip";
+      blip.style.setProperty("--x", `${randomInt(8, 88)}%`);
+      blip.style.setProperty("--y", `${randomInt(16, 92)}%`);
+      blip.style.setProperty("--delay", `${(index * 0.31).toFixed(2)}s`);
+      blip.style.setProperty("--scale", `${(0.7 + Math.random() * 0.9).toFixed(2)}`);
+      blips.appendChild(blip);
+    }
+  }
+
+  function spawnPing(x, y) {
+    const ping = document.createElement("span");
+    ping.className = "radar-ping";
+    ping.style.left = `${x}px`;
+    ping.style.top = `${y}px`;
+    stage.appendChild(ping);
+    window.setTimeout(() => ping.remove(), 520);
+  }
+
   function moveTarget() {
     const width = stage.clientWidth || 320;
     const height = stage.clientHeight || 380;
     const x = randomInt(14, Math.max(14, width - radar.size - 14));
-    const y = randomInt(36, Math.max(36, height - radar.size - 14));
+    const y = randomInt(54, Math.max(54, height - radar.size - 18));
     target.style.left = `${x}px`;
     target.style.top = `${y}px`;
     target.style.width = `${radar.size}px`;
     target.style.height = `${radar.size}px`;
+    target.style.setProperty("--target-tilt", `${randomInt(-14, 14)}deg`);
   }
 
   function stop(message) {
@@ -838,6 +883,8 @@ function createRadarRush(root, api) {
     api.updateBest(radar.score);
     api.setHint(message);
     api.setPrimary("Start", start);
+    status.textContent = "Idle";
+    stage.classList.remove("is-live");
   }
 
   function start() {
@@ -849,6 +896,9 @@ function createRadarRush(root, api) {
     api.setCurrent(0);
     api.setHint("Tap the beacon.");
     badge.textContent = "24s";
+    status.textContent = "Live";
+    stage.classList.add("is-live");
+    seedBlips();
     moveTarget();
 
     radar.tickTimer = window.setInterval(() => {
@@ -868,15 +918,20 @@ function createRadarRush(root, api) {
     api.setPrimary("Restart", start);
   }
 
-  target.addEventListener("click", () => {
+  target.addEventListener("pointerdown", () => {
     if (!radar.active) return;
     radar.score += 1;
     radar.size = Math.max(52, 78 - Math.floor(radar.score / 2) * 2);
     api.setCurrent(radar.score);
     api.setHint(`${radar.score} hits.`);
+    status.textContent = "Lock";
+    const x = parseFloat(target.style.left || "0") + radar.size / 2;
+    const y = parseFloat(target.style.top || "0") + radar.size / 2;
+    spawnPing(x, y);
     moveTarget();
   });
 
+  seedBlips();
   moveTarget();
   api.setPrimary("Start", start);
 
