@@ -711,7 +711,18 @@ function registerOffline() {
 
   window.addEventListener("load", async () => {
     try {
-      await navigator.serviceWorker.register("./sw.js");
+      let reloading = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloading) return;
+        reloading = true;
+        els.offlineStatus.textContent = "Updating app...";
+        window.location.reload();
+      });
+
+      const registration = await navigator.serviceWorker.register("./sw.js", {
+        updateViaCache: "none"
+      });
+      await registration.update();
       els.offlineStatus.textContent = "Offline ready.";
     } catch {
       els.offlineStatus.textContent = "Offline setup failed.";
