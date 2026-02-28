@@ -168,12 +168,12 @@ function createAudioEngine() {
       context = new AudioCtor();
       master = context.createGain();
       const compressor = context.createDynamicsCompressor();
-      compressor.threshold.value = -18;
-      compressor.knee.value = 20;
-      compressor.ratio.value = 8;
-      compressor.attack.value = 0.003;
-      compressor.release.value = 0.18;
-      master.gain.value = enabled ? 0.18 : 0;
+      compressor.threshold.value = -14;
+      compressor.knee.value = 14;
+      compressor.ratio.value = 5;
+      compressor.attack.value = 0.002;
+      compressor.release.value = 0.12;
+      master.gain.value = enabled ? 0.28 : 0;
       master.connect(compressor);
       compressor.connect(context.destination);
     }
@@ -196,7 +196,7 @@ function createAudioEngine() {
     if (context && master) {
       const now = context.currentTime;
       master.gain.cancelScheduledValues(now);
-      master.gain.setTargetAtTime(enabled ? 0.18 : 0.0001, now, 0.02);
+      master.gain.setTargetAtTime(enabled ? 0.28 : 0.0001, now, 0.02);
       if (!enabled) {
         master.gain.setValueAtTime(0, now + 0.08);
       }
@@ -208,12 +208,12 @@ function createAudioEngine() {
     time,
     freq = 440,
     endFreq = freq,
-    duration = 0.12,
+    duration = 0.09,
     type = "square",
-    gain = 0.06,
-    attack = 0.006,
-    filter = 4800,
-    q = 0.7
+    gain = 0.075,
+    attack = 0.0015,
+    filter = 7600,
+    q = 0.18
   }) {
     const ctx = ensureContext();
     if (!ctx || !enabled || !master) return;
@@ -240,18 +240,39 @@ function createAudioEngine() {
     oscillator.stop(startTime + duration + 0.03);
   }
 
+  function beep({
+    time,
+    freq,
+    endFreq = freq,
+    duration = 0.075,
+    gain = 0.075
+  }) {
+    tone({
+      time,
+      freq,
+      endFreq,
+      duration,
+      gain,
+      type: "square",
+      attack: 0.0012,
+      filter: 8200,
+      q: 0.12
+    });
+  }
+
   function burst({
     time,
-    freq = 180,
-    duration = 0.2,
+    freq = 420,
+    duration = 0.16,
     gain = 0.08,
-    spread = 1.5
+    spread = 1.35
   }) {
     const ctx = ensureContext();
     if (!ctx || !enabled) return;
     const startTime = time ?? ctx.currentTime;
-    tone({ time: startTime, freq, endFreq: freq / spread, duration, gain, type: "sawtooth", filter: 2400 });
-    tone({ time: startTime + 0.01, freq: freq * 1.35, endFreq: freq / 2, duration: duration * 0.86, gain: gain * 0.58, type: "triangle", filter: 1800 });
+    beep({ time: startTime, freq, endFreq: freq / spread, duration: duration * 0.45, gain });
+    beep({ time: startTime + 0.03, freq: freq * 0.78, endFreq: (freq * 0.78) / spread, duration: duration * 0.42, gain: gain * 0.82 });
+    beep({ time: startTime + 0.06, freq: freq * 0.58, endFreq: (freq * 0.58) / spread, duration: duration * 0.4, gain: gain * 0.68 });
   }
 
   function sequence(steps) {
@@ -259,7 +280,7 @@ function createAudioEngine() {
     if (!ctx || !enabled) return;
     const now = ctx.currentTime + 0.005;
     steps.forEach((step, index) => {
-      tone({ ...step, time: now + (step.delay ?? index * 0.05) });
+      beep({ ...step, time: now + (step.delay ?? index * 0.05) });
     });
   }
 
@@ -272,94 +293,104 @@ function createAudioEngine() {
 
     switch (name) {
       case "ui":
-        tone({ time: now, freq: 620, endFreq: 420, duration: 0.08, gain: 0.04, type: "triangle", filter: 3200 });
+        beep({ time: now, freq: 988, endFreq: 784, duration: 0.05, gain: 0.065 });
         break;
       case "start":
         sequence([
-          { freq: 261.63, endFreq: 261.63, duration: 0.09, gain: 0.045, type: "square" },
-          { freq: 392, endFreq: 392, duration: 0.08, gain: 0.042, type: "square", delay: 0.07 },
-          { freq: 523.25, endFreq: 523.25, duration: 0.12, gain: 0.05, type: "triangle", delay: 0.14 }
+          { freq: 523.25, duration: 0.06, gain: 0.07 },
+          { freq: 659.25, duration: 0.06, gain: 0.075, delay: 0.07 },
+          { freq: 783.99, duration: 0.08, gain: 0.08, delay: 0.14 }
         ]);
         break;
       case "deny":
-        tone({ time: now, freq: 240, endFreq: 150, duration: 0.11, gain: 0.05, type: "sawtooth", filter: 1800 });
+        sequence([
+          { freq: 220, endFreq: 200, duration: 0.06, gain: 0.07 },
+          { freq: 165, endFreq: 150, duration: 0.08, gain: 0.075, delay: 0.06 }
+        ]);
         break;
       case "slide":
-        tone({ time: now, freq: 300, endFreq: 200, duration: 0.08, gain: 0.038, type: "square", filter: 2600 });
+        beep({ time: now, freq: 392, endFreq: 330, duration: 0.055, gain: 0.06 });
         break;
       case "merge":
-        tone({ time: now, freq: 360 + clamp((detail.value || 0) / 3, 0, 420), endFreq: 220 + clamp((detail.value || 0) / 5, 0, 280), duration: 0.12, gain: 0.055, type: "triangle", filter: 4200 });
-        tone({ time: now + 0.03, freq: 520, endFreq: 740, duration: 0.09, gain: 0.03, type: "square", filter: 3200 });
+        beep({ time: now, freq: 660 + clamp((detail.value || 0) / 2, 0, 240), duration: 0.06, gain: 0.075 });
+        beep({ time: now + 0.04, freq: 880 + clamp((detail.value || 0) / 3, 0, 220), duration: 0.07, gain: 0.082 });
         break;
       case "pad":
-        tone({ time: now, freq: padFrequencies[detail.index] || 440, endFreq: (padFrequencies[detail.index] || 440) * 0.96, duration: 0.18, gain: 0.06, type: "triangle", filter: 3600 });
+        beep({ time: now, freq: padFrequencies[detail.index] || 440, endFreq: (padFrequencies[detail.index] || 440) * 0.98, duration: 0.11, gain: 0.08 });
         break;
       case "round":
         sequence([
-          { freq: 392, duration: 0.08, gain: 0.04, type: "triangle" },
-          { freq: 523.25, duration: 0.08, gain: 0.045, type: "triangle", delay: 0.06 },
-          { freq: 659.25, duration: 0.12, gain: 0.05, type: "triangle", delay: 0.12 }
+          { freq: 659.25, duration: 0.05, gain: 0.065 },
+          { freq: 783.99, duration: 0.06, gain: 0.072, delay: 0.06 },
+          { freq: 988, duration: 0.08, gain: 0.08, delay: 0.12 }
         ]);
         break;
       case "hit":
-        tone({ time: now, freq: 820, endFreq: 520, duration: 0.08, gain: 0.05, type: "square", filter: 4200 });
+        beep({ time: now, freq: 1174, endFreq: 988, duration: 0.05, gain: 0.082 });
         break;
       case "collect":
         sequence([
-          { freq: 523.25, duration: 0.06, gain: 0.04, type: "triangle" },
-          { freq: 659.25, duration: 0.08, gain: 0.045, type: "triangle", delay: 0.05 }
+          { freq: 783.99, duration: 0.05, gain: 0.07 },
+          { freq: 988, duration: 0.06, gain: 0.078, delay: 0.05 }
         ]);
         break;
       case "launch":
-        tone({ time: now, freq: 180, endFreq: 260, duration: 0.09, gain: 0.045, type: "sawtooth", filter: 2600 });
-        tone({ time: now + 0.025, freq: 320, endFreq: 240, duration: 0.1, gain: 0.028, type: "triangle", filter: 2200 });
+        sequence([
+          { freq: 392, endFreq: 440, duration: 0.05, gain: 0.072 },
+          { freq: 523.25, endFreq: 587.33, duration: 0.05, gain: 0.078, delay: 0.04 }
+        ]);
         break;
       case "explosion":
-        burst({ time: now, freq: detail.freq || 170, duration: detail.duration || 0.22, gain: detail.gain || 0.075, spread: 2.1 });
+        burst({ time: now, freq: detail.freq || 420, duration: detail.duration || 0.16, gain: detail.gain || 0.085, spread: 1.4 });
         break;
       case "crash":
-        burst({ time: now, freq: 120, duration: 0.28, gain: 0.085, spread: 2.6 });
-        tone({ time: now + 0.02, freq: 90, endFreq: 55, duration: 0.24, gain: 0.04, type: "square", filter: 1200 });
+        burst({ time: now, freq: 330, duration: 0.18, gain: 0.09, spread: 1.5 });
+        beep({ time: now + 0.07, freq: 165, endFreq: 110, duration: 0.11, gain: 0.08 });
         break;
       case "scrape":
-        tone({ time: now, freq: 160, endFreq: 110, duration: 0.16, gain: 0.045, type: "sawtooth", filter: 1400 });
+        sequence([
+          { freq: 294, duration: 0.025, gain: 0.05 },
+          { freq: 262, duration: 0.025, gain: 0.05, delay: 0.03 },
+          { freq: 247, duration: 0.03, gain: 0.055, delay: 0.06 }
+        ]);
         break;
       case "lane":
-        tone({ time: now, freq: 250, endFreq: 330, duration: 0.08, gain: 0.04, type: "triangle", filter: 2200 });
+        beep({ time: now, freq: 440, endFreq: 523.25, duration: 0.05, gain: 0.065 });
         break;
       case "stack":
-        tone({ time: now, freq: detail.perfect ? 720 : 460, endFreq: detail.perfect ? 860 : 620, duration: 0.1, gain: 0.05, type: "square", filter: 3600 });
+        beep({ time: now, freq: detail.perfect ? 988 : 659.25, endFreq: detail.perfect ? 1174 : 783.99, duration: 0.07, gain: 0.078 });
         if (detail.perfect) {
-          tone({ time: now + 0.03, freq: 960, endFreq: 960, duration: 0.08, gain: 0.03, type: "triangle", filter: 4200 });
+          beep({ time: now + 0.045, freq: 1318.51, duration: 0.06, gain: 0.072 });
         }
         break;
       case "lock":
-        tone({ time: now, freq: 680, endFreq: 780, duration: 0.07, gain: 0.045, type: "square", filter: 4600 });
+        beep({ time: now, freq: 988, endFreq: 1174, duration: 0.055, gain: 0.08 });
         break;
       case "brick":
-        tone({ time: now, freq: 540, endFreq: 340, duration: 0.07, gain: 0.045, type: "triangle", filter: 3600 });
+        beep({ time: now, freq: 784, endFreq: 659.25, duration: 0.05, gain: 0.072 });
         break;
       case "paddle":
-        tone({ time: now, freq: 220, endFreq: 300, duration: 0.06, gain: 0.04, type: "square", filter: 2600 });
+        beep({ time: now, freq: 330, endFreq: 392, duration: 0.045, gain: 0.07 });
         break;
       case "orbit":
-        tone({ time: now, freq: 480 + randomInt(0, 120), endFreq: 680 + randomInt(0, 120), duration: 0.08, gain: 0.045, type: "triangle", filter: 4400 });
+        beep({ time: now, freq: 880 + randomInt(0, 80), endFreq: 988 + randomInt(0, 90), duration: 0.06, gain: 0.078 });
         break;
       case "level":
         sequence([
-          { freq: 392, duration: 0.07, gain: 0.038, type: "triangle" },
-          { freq: 523.25, duration: 0.07, gain: 0.04, type: "triangle", delay: 0.05 },
-          { freq: 783.99, duration: 0.12, gain: 0.048, type: "triangle", delay: 0.1 }
+          { freq: 659.25, duration: 0.06, gain: 0.072 },
+          { freq: 880, duration: 0.06, gain: 0.078, delay: 0.06 },
+          { freq: 1174, duration: 0.1, gain: 0.085, delay: 0.12 }
         ]);
         break;
       case "fail":
         sequence([
-          { freq: 240, endFreq: 190, duration: 0.1, gain: 0.05, type: "sawtooth", filter: 1800 },
-          { freq: 170, endFreq: 120, duration: 0.16, gain: 0.055, type: "sawtooth", filter: 1400, delay: 0.07 }
+          { freq: 262, endFreq: 247, duration: 0.06, gain: 0.075 },
+          { freq: 196, endFreq: 185, duration: 0.07, gain: 0.078, delay: 0.06 },
+          { freq: 147, endFreq: 131, duration: 0.09, gain: 0.082, delay: 0.13 }
         ]);
         break;
       default:
-        tone({ time: now, freq: 440, endFreq: 360, duration: 0.08, gain: 0.04, type: "triangle", filter: 3200 });
+        beep({ time: now, freq: 784, endFreq: 659.25, duration: 0.05, gain: 0.07 });
         break;
     }
   }
