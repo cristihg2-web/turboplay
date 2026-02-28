@@ -64,6 +64,8 @@ button {
   font: inherit;
   border: 0;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .arcade-shell {

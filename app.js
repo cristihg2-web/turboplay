@@ -520,6 +520,39 @@ function setSecondaryAction(label, handler) {
   els.secondaryAction.textContent = label;
 }
 
+function runCabinetAction(handler) {
+  try {
+    audio.prime();
+  } catch {
+    // Keep the game controls responsive even if audio init fails on a device.
+  }
+  if (handler) handler();
+}
+
+function bindCabinetAction(button, getHandler) {
+  let pointerTriggered = false;
+
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    pointerTriggered = true;
+    runCabinetAction(getHandler());
+  });
+
+  button.addEventListener("click", () => {
+    if (pointerTriggered) {
+      pointerTriggered = false;
+      return;
+    }
+    runCabinetAction(getHandler());
+  });
+
+  button.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    runCabinetAction(getHandler());
+  });
+}
+
 function updateBestValue(gameId, value) {
   const next = Math.max(state.store.bests[gameId] || 0, value);
   state.store.bests[gameId] = next;
@@ -782,15 +815,8 @@ function setupAudio() {
   window.addEventListener("keydown", () => audio.prime(), { once: true });
 }
 
-els.primaryAction.addEventListener("click", () => {
-  audio.prime();
-  if (state.primaryHandler) state.primaryHandler();
-});
-
-els.secondaryAction.addEventListener("click", () => {
-  audio.prime();
-  if (state.secondaryHandler) state.secondaryHandler();
-});
+bindCabinetAction(els.primaryAction, () => state.primaryHandler);
+bindCabinetAction(els.secondaryAction, () => state.secondaryHandler);
 
 window.addEventListener("keydown", (event) => {
   audio.prime();
