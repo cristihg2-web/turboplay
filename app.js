@@ -2530,10 +2530,12 @@ function createGridStacker(root, api) {
   const stackBaseY = height - 36;
   const movingStartY = stackBaseY - stackStep;
   const scrollAnchorY = 76;
+  const blockColors = ["#ffbf47", "#5ee1ff", "#ff6ca8", "#76f0c2"];
 
   const game = {
     placed: [],
     moving: null,
+    falling: [],
     floors: 0,
     direction: 1,
     running: false,
@@ -2545,6 +2547,7 @@ function createGridStacker(root, api) {
     api.countPlay();
     game.placed = [{ x: 70, y: stackBaseY, width: 180, color: "#5ee1ff" }];
     game.moving = { x: 0, y: movingStartY, width: 180, color: "#ffbf47" };
+    game.falling = [];
     game.floors = 0;
     game.direction = 1;
     game.running = true;
@@ -2556,6 +2559,47 @@ function createGridStacker(root, api) {
     game.raf = requestAnimationFrame(loop);
   }
 
+  function nextBlockColor() {
+    return choice(blockColors);
+  }
+
+  function spawnFallingPiece(x, y, pieceWidth, color, drift) {
+    if (pieceWidth <= 0) return;
+    game.falling.push({
+      x,
+      y,
+      width: pieceWidth,
+      color,
+      drift,
+      vy: 0,
+      angle: 0,
+      spin: drift * 0.018
+    });
+  }
+
+  function drawBlockRect(x, y, blockWidth, color, alpha = 1) {
+    if (blockWidth <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    ctx.fillStyle = "rgba(0,0,0,0.28)";
+    ctx.fillRect(x + 3, y + 4, blockWidth, blockHeight);
+
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, blockWidth, blockHeight);
+
+    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    ctx.fillRect(x + 2, y + 2, Math.max(0, blockWidth - 4), 4);
+
+    ctx.fillStyle = "rgba(8, 14, 28, 0.18)";
+    ctx.fillRect(x + 2, y + blockHeight - 5, Math.max(0, blockWidth - 4), 3);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.26)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, Math.max(0, blockWidth - 1), blockHeight - 1);
+    ctx.restore();
+  }
+
   function drop() {
     if (!game.running || !game.moving) return;
 
@@ -2563,13 +2607,36 @@ function createGridStacker(root, api) {
     const overlapStart = Math.max(last.x, game.moving.x);
     const overlapEnd = Math.min(last.x + last.width, game.moving.x + game.moving.width);
     const overlap = overlapEnd - overlapStart;
+    const movingRight = game.moving.x + game.moving.width;
 
     if (overlap <= 0) {
+      spawnFallingPiece(game.moving.x, game.moving.y, game.moving.width, game.moving.color, game.direction * 72);
+      game.moving = null;
       game.running = false;
       api.updateBest(game.floors);
       api.setHint("Missed.");
       api.setPrimary("Start", reset);
       return;
+    }
+
+    if (overlapStart > game.moving.x) {
+      spawnFallingPiece(
+        game.moving.x,
+        game.moving.y,
+        overlapStart - game.moving.x,
+        game.moving.color,
+        -64
+      );
+    }
+
+    if (overlapEnd < movingRight) {
+      spawnFallingPiece(
+        overlapEnd,
+        game.moving.y,
+        movingRight - overlapEnd,
+        game.moving.color,
+        64
+      );
     }
 
     game.floors += 1;
@@ -2579,23 +2646,24 @@ function createGridStacker(root, api) {
       x: overlapStart,
       y: game.moving.y,
       width: overlap,
-      color: choice(["#ffbf47", "#5ee1ff", "#ff6ca8", "#76f0c2"])
+      color: nextBlockColor()
     });
 
     if (game.moving.y <= scrollAnchorY) {
       game.placed = game.placed.map((block) => ({ ...block, y: block.y + stackStep }));
+      game.falling = game.falling.map((piece) => ({ ...piece, y: piece.y + stackStep }));
       game.moving = {
         x: 0,
         y: scrollAnchorY,
         width: overlap,
-        color: choice(["#ffbf47", "#5ee1ff", "#ff6ca8", "#76f0c2"])
+        color: nextBlockColor()
       };
     } else {
       game.moving = {
         x: 0,
         y: game.moving.y - stackStep,
         width: overlap,
-        color: choice(["#ffbf47", "#5ee1ff", "#ff6ca8", "#76f0c2"])
+        color: nextBlockColor()
       };
     }
     api.setHint("Stack it.");
@@ -2607,28 +2675,55 @@ function createGridStacker(root, api) {
     ctx.fillRect(0, 0, width, height);
 
     game.placed.forEach((block) => {
-      ctx.fillStyle = block.color;
-      ctx.fillRect(block.x, block.y, block.width, blockHeight);
+      drawBlockRect(block.x, block.y, block.width, block.color);
     });
 
     if (game.moving) {
-      ctx.fillStyle = game.moving.color;
-      ctx.fillRect(game.moving.x, game.moving.y, game.moving.width, blockHeight);
+      drawBlockRect(game.moving.x, game.moving.y, game.moving.width, game.moving.color);
     }
+
+    game.falling.forEach((piece) => {
+      const alpha = piece.y > height - 40 ? clamp((height + 36 - piece.y) / 76, 0, 1) : 1;
+      ctx.save();
+      ctx.translate(piece.x + piece.width / 2, piece.y + blockHeight / 2);
+      ctx.rotate(piece.angle);
+      drawBlockRect(-piece.width / 2, -blockHeight / 2, piece.width, piece.color, alpha);
+      ctx.restore();
+    });
   }
 
-  function loop(timestamp) {
-    draw();
-    if (!game.running) return;
-    const delta = Math.min(32, timestamp - game.lastTime || 16);
-    game.lastTime = timestamp;
+  function updateFalling(delta) {
+    const seconds = delta / 1000;
+    game.falling = game.falling.filter((piece) => {
+      piece.vy += 860 * seconds;
+      piece.x += piece.drift * seconds;
+      piece.y += piece.vy * seconds;
+      piece.angle += piece.spin * seconds;
+      return piece.y < height + 64;
+    });
+  }
+
+  function updateMoving(delta) {
+    if (!game.moving) return;
     game.moving.x += game.direction * delta * 0.14;
 
     if (game.moving.x <= 0) {
       game.direction = 1;
+      game.moving.x = 0;
     } else if (game.moving.x + game.moving.width >= width) {
       game.direction = -1;
+      game.moving.x = width - game.moving.width;
     }
+  }
+
+  function loop(timestamp) {
+    const delta = Math.min(32, timestamp - game.lastTime || 16);
+    game.lastTime = timestamp;
+    updateFalling(delta);
+    if (game.running) updateMoving(delta);
+    draw();
+
+    if (!game.running && game.falling.length === 0) return;
 
     game.raf = requestAnimationFrame(loop);
   }
