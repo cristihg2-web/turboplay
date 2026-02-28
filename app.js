@@ -639,18 +639,20 @@ function createPulsePads(root, api) {
   stage.innerHTML = `
     <div class="score-row">
       <div class="score-pill">Memory <strong>4 pads</strong></div>
-      <div class="score-pill">Tap <strong>Repeat</strong></div>
+      <div class="score-pill">Watch <strong>Then repeat</strong></div>
     </div>
+    <div class="pulse-cue" aria-live="polite">Press Start</div>
     <div class="pixel-pads">
-      <button class="pixel-pad" type="button" data-color="pink" data-index="0" aria-label="Pink"></button>
-      <button class="pixel-pad" type="button" data-color="cyan" data-index="1" aria-label="Cyan"></button>
-      <button class="pixel-pad" type="button" data-color="amber" data-index="2" aria-label="Amber"></button>
-      <button class="pixel-pad" type="button" data-color="mint" data-index="3" aria-label="Mint"></button>
+      <button class="pixel-pad" type="button" data-color="pink" data-index="0" aria-label="Pink"><span class="pulse-label">A</span><span class="pulse-name">Pink</span></button>
+      <button class="pixel-pad" type="button" data-color="cyan" data-index="1" aria-label="Cyan"><span class="pulse-label">B</span><span class="pulse-name">Cyan</span></button>
+      <button class="pixel-pad" type="button" data-color="amber" data-index="2" aria-label="Amber"><span class="pulse-label">C</span><span class="pulse-name">Amber</span></button>
+      <button class="pixel-pad" type="button" data-color="mint" data-index="3" aria-label="Mint"><span class="pulse-label">D</span><span class="pulse-name">Mint</span></button>
     </div>
   `;
   root.appendChild(stage);
 
   const pads = Array.from(stage.querySelectorAll(".pixel-pad"));
+  const cue = stage.querySelector(".pulse-cue");
 
   const memory = {
     sequence: [],
@@ -658,6 +660,7 @@ function createPulsePads(root, api) {
     round: 0,
     locked: true,
     flashing: null,
+    displayStep: 0,
     timers: []
   };
 
@@ -669,6 +672,7 @@ function createPulsePads(root, api) {
   function renderPads() {
     pads.forEach((pad, index) => {
       pad.classList.toggle("is-lit", memory.flashing === index);
+      pad.classList.toggle("is-dim", memory.flashing !== null && memory.flashing !== index);
       pad.disabled = memory.locked;
     });
     api.setCurrent(memory.round);
@@ -690,23 +694,27 @@ function createPulsePads(root, api) {
       if (step >= memory.sequence.length) {
         memory.locked = false;
         memory.flashing = null;
+        memory.displayStep = 0;
+        cue.textContent = "Your turn";
         api.setHint("Your turn.");
         renderPads();
         return;
       }
 
+      memory.displayStep = step + 1;
+      cue.textContent = `Watch ${memory.displayStep} / ${memory.sequence.length}`;
       setFlash(memory.sequence[step]);
       const offTimer = window.setTimeout(() => {
         memory.flashing = null;
         renderPads();
         step += 1;
-        const nextTimer = window.setTimeout(flash, 220);
+        const nextTimer = window.setTimeout(flash, 260);
         memory.timers.push(nextTimer);
-      }, 420);
+      }, 560);
       memory.timers.push(offTimer);
     };
 
-    const startTimer = window.setTimeout(flash, 320);
+    const startTimer = window.setTimeout(flash, 420);
     memory.timers.push(startTimer);
   }
 
@@ -716,6 +724,7 @@ function createPulsePads(root, api) {
     memory.round = memory.sequence.length;
     api.setCurrent(memory.round);
     api.setHint(`Round ${memory.round}.`);
+    cue.textContent = `Round ${memory.round}`;
     playSequence();
   }
 
@@ -726,8 +735,12 @@ function createPulsePads(root, api) {
     memory.index = 0;
     memory.round = 0;
     memory.locked = true;
+    memory.flashing = null;
+    memory.displayStep = 0;
     api.setCurrent(0);
     api.setHint("Loading...");
+    cue.textContent = "Loading";
+    renderPads();
     nextRound();
   }
 
@@ -735,6 +748,7 @@ function createPulsePads(root, api) {
     if (memory.locked) return;
 
     setFlash(index);
+    cue.textContent = `Input ${memory.index + 1} / ${memory.sequence.length}`;
     const resetTimer = window.setTimeout(() => {
       memory.flashing = null;
       renderPads();
@@ -744,6 +758,7 @@ function createPulsePads(root, api) {
     if (memory.sequence[memory.index] !== index) {
       api.updateBest(Math.max(0, memory.round - 1));
       memory.locked = true;
+      cue.textContent = "Missed";
       api.setHint("Missed.");
       return;
     }
@@ -753,10 +768,12 @@ function createPulsePads(root, api) {
     if (memory.index === memory.sequence.length) {
       api.updateBest(memory.round);
       memory.locked = true;
+      cue.textContent = "Perfect";
       api.setHint("Correct.");
       const nextTimer = window.setTimeout(nextRound, 840);
       memory.timers.push(nextTimer);
     } else {
+      cue.textContent = `Input ${memory.index + 1} / ${memory.sequence.length}`;
       api.setHint(`${memory.sequence.length - memory.index} left.`);
     }
   }
