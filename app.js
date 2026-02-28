@@ -970,12 +970,12 @@ function createCometDestroyer(root, api) {
   stage.appendChild(rightBadge);
   root.appendChild(stage);
 
-  const batteryBase = { x: 48, y: 322 };
+  const batteryBase = { x: 28, y: 346 };
   const batterySlots = [
-    { x: 34, y: 306 },
-    { x: 52, y: 292 },
-    { x: 50, y: 328 },
-    { x: 68, y: 314 }
+    { x: 18, y: 326 },
+    { x: 30, y: 316 },
+    { x: 30, y: 338 },
+    { x: 42, y: 328 }
   ];
 
   const skylineTargets = [
@@ -1002,7 +1002,7 @@ function createCometDestroyer(root, api) {
     salvos: [],
     comets: [],
     explosions: [],
-    target: { x: 224, y: 162, show: 0.55 }
+    target: { x: 240, y: 150, show: 0.55 }
   };
 
   function currentDelay() {
@@ -1040,7 +1040,7 @@ function createCometDestroyer(root, api) {
 
   function tubeMuzzle(slotIndex) {
     const slot = batterySlots[slotIndex];
-    return { x: slot.x + 64, y: slot.y - 42 };
+    return { x: slot.x + 48, y: slot.y - 30 };
   }
 
   function updateHud() {
@@ -1075,17 +1075,17 @@ function createCometDestroyer(root, api) {
       y: anchor.y + randomInt(-10, 10)
     };
     const crossPoint = {
-      x: randomInt(198, 256),
-      y: randomInt(146, 228)
+      x: randomInt(228, 286),
+      y: randomInt(112, 208)
     };
     const directionOut = normalize(crossPoint.x - target.x, crossPoint.y - target.y);
-    let travel = randomInt(168, 236);
+    let travel = randomInt(220, 304);
     let start = {
       x: crossPoint.x + directionOut.x * travel,
       y: crossPoint.y + directionOut.y * travel
     };
 
-    while (start.x < width + 20) {
+    while (start.x < width + 56) {
       travel += 20;
       start = {
         x: crossPoint.x + directionOut.x * travel,
@@ -1180,7 +1180,7 @@ function createCometDestroyer(root, api) {
     game.salvos = [];
     game.comets = [];
     game.explosions = [];
-    game.target = { x: 224, y: 162, show: 0.55 };
+    game.target = { x: 240, y: 150, show: 0.55 };
     game.lastTime = performance.now();
     updateHud();
     api.setHint("Tap the sky to launch a missile.");
@@ -1273,27 +1273,47 @@ function createCometDestroyer(root, api) {
   function drawBattery() {
     ctx.fillStyle = "rgba(0,0,0,0.28)";
     ctx.beginPath();
-    ctx.ellipse(batteryBase.x + 36, batteryBase.y + 18, 78, 20, -0.32, 0, Math.PI * 2);
+    ctx.ellipse(batteryBase.x + 30, batteryBase.y + 12, 56, 14, -0.28, 0, Math.PI * 2);
     ctx.fill();
 
     drawPolygon(
       [
-        { x: batteryBase.x - 20, y: batteryBase.y + 24 },
-        { x: batteryBase.x + 6, y: batteryBase.y + 4 },
-        { x: batteryBase.x + 78, y: batteryBase.y + 36 },
-        { x: batteryBase.x + 42, y: batteryBase.y + 62 }
+        { x: batteryBase.x - 14, y: batteryBase.y + 16 },
+        { x: batteryBase.x + 8, y: batteryBase.y + 2 },
+        { x: batteryBase.x + 54, y: batteryBase.y + 20 },
+        { x: batteryBase.x + 24, y: batteryBase.y + 38 }
       ],
-      "#1a263f"
+      "#172338"
     );
 
     drawPolygon(
       [
-        { x: batteryBase.x - 6, y: batteryBase.y + 8 },
-        { x: batteryBase.x + 26, y: batteryBase.y - 14 },
-        { x: batteryBase.x + 106, y: batteryBase.y + 20 },
-        { x: batteryBase.x + 74, y: batteryBase.y + 44 }
+        { x: batteryBase.x - 2, y: batteryBase.y + 4 },
+        { x: batteryBase.x + 20, y: batteryBase.y - 12 },
+        { x: batteryBase.x + 70, y: batteryBase.y + 8 },
+        { x: batteryBase.x + 46, y: batteryBase.y + 24 }
       ],
-      "#314769"
+      "#2e476b"
+    );
+
+    drawPolygon(
+      [
+        { x: batteryBase.x + 2, y: batteryBase.y + 14 },
+        { x: batteryBase.x + 20, y: batteryBase.y + 1 },
+        { x: batteryBase.x + 58, y: batteryBase.y + 16 },
+        { x: batteryBase.x + 42, y: batteryBase.y + 28 }
+      ],
+      "#415d86"
+    );
+
+    drawPolygon(
+      [
+        { x: batteryBase.x + 6, y: batteryBase.y + 22 },
+        { x: batteryBase.x + 18, y: batteryBase.y + 14 },
+        { x: batteryBase.x + 36, y: batteryBase.y + 22 },
+        { x: batteryBase.x + 22, y: batteryBase.y + 30 }
+      ],
+      "#f2c158"
     );
 
     batterySlots.forEach((slot, index) => {
@@ -1304,54 +1324,67 @@ function createCometDestroyer(root, api) {
       drawPolygon(
         [
           { x: slot.x, y: slot.y },
-          { x: slot.x + 14, y: slot.y - 11 },
-          { x: muzzle.x + 4, y: muzzle.y + 4 },
-          { x: muzzle.x - 10, y: muzzle.y + 15 }
+          { x: slot.x + 10, y: slot.y - 8 },
+          { x: muzzle.x + 5, y: muzzle.y + 4 },
+          { x: muzzle.x - 7, y: muzzle.y + 12 }
         ],
-        "#cad7ea"
+        "#d4deeb"
       );
 
       drawPolygon(
         [
-          { x: slot.x + 3, y: slot.y + 2 },
-          { x: slot.x + 14, y: slot.y - 6 },
-          { x: muzzle.x - 4, y: muzzle.y + 8 },
-          { x: muzzle.x - 14, y: muzzle.y + 15 }
+          { x: slot.x + 2, y: slot.y + 2 },
+          { x: slot.x + 10, y: slot.y - 4 },
+          { x: muzzle.x - 2, y: muzzle.y + 7 },
+          { x: muzzle.x - 11, y: muzzle.y + 13 }
         ],
-        "#405471"
+        "#40536f"
       );
 
-      ctx.fillStyle = game.missiles[index].reload <= 0 ? "#ff6677" : "#273548";
-      ctx.beginPath();
-      ctx.moveTo(slot.x + 12, slot.y - 2);
-      ctx.lineTo(slot.x + 22, slot.y - 10);
-      ctx.lineTo(slot.x + 44, slot.y - 22);
-      ctx.lineTo(slot.x + 36, slot.y - 12);
-      ctx.closePath();
-      ctx.fill();
+      drawPolygon(
+        [
+          { x: slot.x + 6, y: slot.y + 1 },
+          { x: slot.x + 14, y: slot.y - 4 },
+          { x: slot.x + 27, y: slot.y - 12 },
+          { x: slot.x + 23, y: slot.y - 6 }
+        ],
+        game.missiles[index].reload <= 0 ? "#ff6c83" : "#273548"
+      );
 
+      ctx.fillStyle = "#11182b";
+      ctx.fillRect(slot.x - 1, slot.y + 4, 24, 10);
       ctx.fillStyle = "rgba(94, 225, 255, 0.12)";
-      ctx.fillRect(slot.x + 2, slot.y + 10, 42, 4);
-      ctx.fillStyle = "rgba(94, 225, 255, 0.72)";
-      ctx.fillRect(slot.x + 2, slot.y + 10, 42 * clamp(readyRatio, 0, 1), 4);
+      ctx.fillRect(slot.x + 1, slot.y + 7, 22, 3);
+      ctx.fillStyle = "rgba(94, 225, 255, 0.78)";
+      ctx.fillRect(slot.x + 1, slot.y + 7, 22 * clamp(readyRatio, 0, 1), 3);
+
+      ctx.fillStyle = "rgba(255,255,255,0.2)";
+      ctx.fillRect(slot.x + 3, slot.y + 5, 9, 1.5);
 
       if (flash > 0) {
         ctx.fillStyle = `rgba(255, 235, 166, ${flash * 4})`;
         ctx.beginPath();
-        ctx.arc(muzzle.x - 2, muzzle.y + 8, 4 + flash * 14, 0, Math.PI * 2);
+        ctx.arc(muzzle.x, muzzle.y + 7, 4 + flash * 12, 0, Math.PI * 2);
         ctx.fill();
       }
     });
 
     drawPolygon(
       [
-        { x: batteryBase.x + 30, y: batteryBase.y + 2 },
-        { x: batteryBase.x + 44, y: batteryBase.y - 8 },
-        { x: batteryBase.x + 52, y: batteryBase.y - 2 },
-        { x: batteryBase.x + 38, y: batteryBase.y + 8 }
+        { x: batteryBase.x + 18, y: batteryBase.y - 2 },
+        { x: batteryBase.x + 28, y: batteryBase.y - 9 },
+        { x: batteryBase.x + 34, y: batteryBase.y - 5 },
+        { x: batteryBase.x + 24, y: batteryBase.y + 2 }
       ],
       "#f4c554"
     );
+
+    ctx.strokeStyle = "rgba(255,255,255,0.16)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(batteryBase.x + 2, batteryBase.y + 10);
+    ctx.lineTo(batteryBase.x + 40, batteryBase.y + 24);
+    ctx.stroke();
   }
 
   function drawTargetMarker() {
