@@ -29,7 +29,7 @@ const GAME_DEFS = [
     id: "comet",
     name: "Comet Destroyer",
     kicker: "Defense",
-    blurb: "Rail cannon shields the city.",
+    blurb: "Missile battery guards the skyline.",
     currentLabel: "Time",
     bestLabel: "Best Time"
   },
@@ -913,21 +913,15 @@ function createCometDestroyer(root, api) {
   stage.appendChild(canvas);
   stage.appendChild(leftBadge);
   stage.appendChild(rightBadge);
-  stage.appendChild(
-    buildTouchControls([
-      [{ label: "Fire", onPress: fire, accent: true }]
-    ])
-  );
   root.appendChild(stage);
 
-  const cannon = {
-    baseX: 56,
-    baseY: 316,
-    muzzleX: 162,
-    muzzleY: 222,
-    beamEndX: 350,
-    beamEndY: 110
-  };
+  const batteryBase = { x: 48, y: 322 };
+  const batterySlots = [
+    { x: 34, y: 306 },
+    { x: 52, y: 292 },
+    { x: 50, y: 328 },
+    { x: 68, y: 314 }
+  ];
 
   const skylineTargets = [
     { x: 48, y: 292 },
@@ -943,28 +937,27 @@ function createCometDestroyer(root, api) {
     destroyed: 0,
     shields: 10,
     level: 0,
-    reload: 0,
-    charge: 0,
-    beam: 0,
-    beamWidth: 0,
+    cadence: 0,
     spawnTick: 0,
     lastTime: 0,
     raf: 0,
     flash: 0,
-    muzzleFlash: 0,
-    railGlow: 0,
+    nextTube: 0,
+    missiles: Array.from({ length: 4 }, () => ({ reload: 0, flash: 0 })),
+    salvos: [],
     comets: [],
-    explosions: []
+    explosions: [],
+    target: { x: 224, y: 162, show: 0.55 }
   };
 
   function currentDelay() {
     const ramp = clamp(game.time / 300, 0, 1);
-    return Math.max(620, 1260 - ramp * 260 - game.level * 32);
+    return Math.max(680, 1320 - ramp * 340 - game.level * 28);
   }
 
   function currentCometSpeed() {
     const ramp = clamp(game.time / 300, 0, 1);
-    return 76 + ramp * 20 + game.level * 2.1;
+    return 72 + ramp * 24 + game.level * 2;
   }
 
   function normalize(dx, dy) {
@@ -990,38 +983,34 @@ function createCometDestroyer(root, api) {
     };
   }
 
+  function tubeMuzzle(slotIndex) {
+    const slot = batterySlots[slotIndex];
+    return { x: slot.x + 64, y: slot.y - 42 };
+  }
+
   function updateHud() {
+    const ready = game.missiles.filter((missile) => missile.reload <= 0).length;
     leftBadge.textContent = `${game.shields} shields`;
-    rightBadge.textContent = `Lv ${game.level + 1} • ${game.destroyed}`;
+    rightBadge.textContent = `${ready}/4 ready • Lv ${game.level + 1}`;
     api.setCurrent(Math.floor(game.time));
   }
 
-  function spawnExplosion(x, y, color) {
+  function spawnExplosion(x, y, radius, color) {
     game.explosions.push({
       x,
       y,
-      life: 0.42,
-      maxLife: 0.42,
-      radius: 14,
+      life: 0.26,
+      maxLife: 0.26,
+      radius,
+      hitRadius: radius,
       color
     });
   }
 
-  function pointToSegmentDistance(point, start, end) {
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const lengthSquared = dx * dx + dy * dy || 1;
-    const t = clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared, 0, 1);
-    const px = start.x + dx * t;
-    const py = start.y + dy * t;
-    return Math.hypot(point.x - px, point.y - py);
-  }
-
-  function beamSegment() {
-    return {
-      start: { x: cannon.muzzleX, y: cannon.muzzleY },
-      end: { x: cannon.beamEndX, y: cannon.beamEndY }
-    };
+  function missilePoint(salvo, t) {
+    const point = lerpPoint(salvo.start, salvo.target, t);
+    point.y -= Math.sin(Math.PI * t) * 18;
+    return point;
   }
 
   function spawnComet(spread = 0) {
@@ -1030,10 +1019,12 @@ function createCometDestroyer(root, api) {
       x: anchor.x + spread * 12 + randomInt(-8, 8),
       y: anchor.y + randomInt(-10, 10)
     };
-    const { start: beamStart, end: beamEnd } = beamSegment();
-    const crossPoint = lerpPoint(beamStart, beamEnd, 0.38 + Math.random() * 0.38);
+    const crossPoint = {
+      x: randomInt(198, 256),
+      y: randomInt(146, 228)
+    };
     const directionOut = normalize(crossPoint.x - target.x, crossPoint.y - target.y);
-    let travel = randomInt(154, 224);
+    let travel = randomInt(168, 236);
     let start = {
       x: crossPoint.x + directionOut.x * travel,
       y: crossPoint.y + directionOut.y * travel
@@ -1063,12 +1054,51 @@ function createCometDestroyer(root, api) {
     });
   }
 
-  function fire() {
-    if (!game.active || game.reload > 0 || game.charge > 0 || game.beam > 0) return;
-    game.reload = 0.62;
-    game.charge = 0.16;
-    game.railGlow = 1;
-    api.setHint("Charging railgun.");
+  function nextReadyTube() {
+    for (let offset = 0; offset < game.missiles.length; offset += 1) {
+      const index = (game.nextTube + offset) % game.missiles.length;
+      if (game.missiles[index].reload <= 0) return index;
+    }
+    return -1;
+  }
+
+  function fireAt(x, y) {
+    game.target = {
+      x: clamp(x, 116, width - 10),
+      y: clamp(y, 66, height - 22),
+      show: 0.85
+    };
+
+    if (!game.active) return;
+    if (game.cadence > 0) {
+      api.setHint("Launcher cycling.");
+      return;
+    }
+
+    const tubeIndex = nextReadyTube();
+    if (tubeIndex < 0) {
+      api.setHint("Missile rack reloading.");
+      return;
+    }
+
+    const start = tubeMuzzle(tubeIndex);
+    const target = { x: game.target.x, y: game.target.y };
+    const distance = Math.hypot(target.x - start.x, target.y - start.y);
+
+    game.salvos.push({
+      slot: tubeIndex,
+      start,
+      target,
+      travel: 0,
+      duration: clamp(distance / 240, 0.5, 0.92),
+      active: true
+    });
+    game.missiles[tubeIndex].reload = 1.4;
+    game.missiles[tubeIndex].flash = 0.18;
+    game.cadence = 0.5;
+    game.nextTube = (tubeIndex + 1) % game.missiles.length;
+    api.setHint("Missile away.");
+    updateHud();
   }
 
   function stop(message) {
@@ -1087,19 +1117,18 @@ function createCometDestroyer(root, api) {
     game.destroyed = 0;
     game.shields = 10;
     game.level = 0;
-    game.reload = 0;
-    game.charge = 0;
-    game.beam = 0;
-    game.beamWidth = 0;
+    game.cadence = 0;
     game.spawnTick = 0;
     game.flash = 0;
-    game.muzzleFlash = 0;
-    game.railGlow = 0;
+    game.nextTube = 0;
+    game.missiles = Array.from({ length: 4 }, () => ({ reload: 0, flash: 0 }));
+    game.salvos = [];
     game.comets = [];
     game.explosions = [];
+    game.target = { x: 224, y: 162, show: 0.55 };
     game.lastTime = performance.now();
     updateHud();
-    api.setHint("Fire when a comet crosses the rail line.");
+    api.setHint("Tap the sky to launch a missile.");
     api.setPrimary("Restart", start);
     cancelAnimationFrame(game.raf);
     draw();
@@ -1186,111 +1215,108 @@ function createCometDestroyer(root, api) {
     ctx.fillRect(0, 330, width, 90);
   }
 
-  function drawRailAndCannon() {
-    const railGlow = Math.max(game.railGlow, game.beam * 10);
-    const glowColor = `rgba(94, 225, 255, ${0.16 + railGlow * 0.26})`;
-
+  function drawBattery() {
     ctx.fillStyle = "rgba(0,0,0,0.28)";
     ctx.beginPath();
-    ctx.ellipse(cannon.baseX + 34, cannon.baseY + 18, 70, 18, -0.32, 0, Math.PI * 2);
+    ctx.ellipse(batteryBase.x + 36, batteryBase.y + 18, 78, 20, -0.32, 0, Math.PI * 2);
     ctx.fill();
 
     drawPolygon(
       [
-        { x: cannon.baseX - 18, y: cannon.baseY + 26 },
-        { x: cannon.baseX + 8, y: cannon.baseY + 4 },
-        { x: cannon.baseX + 72, y: cannon.baseY + 34 },
-        { x: cannon.baseX + 42, y: cannon.baseY + 58 }
+        { x: batteryBase.x - 20, y: batteryBase.y + 24 },
+        { x: batteryBase.x + 6, y: batteryBase.y + 4 },
+        { x: batteryBase.x + 78, y: batteryBase.y + 36 },
+        { x: batteryBase.x + 42, y: batteryBase.y + 62 }
       ],
-      "#16233b"
+      "#1a263f"
     );
 
     drawPolygon(
       [
-        { x: cannon.baseX + 22, y: cannon.baseY + 6 },
-        { x: cannon.baseX + 78, y: cannon.baseY - 48 },
-        { x: cannon.baseX + 108, y: cannon.baseY - 32 },
-        { x: cannon.baseX + 52, y: cannon.baseY + 20 }
+        { x: batteryBase.x - 6, y: batteryBase.y + 8 },
+        { x: batteryBase.x + 26, y: batteryBase.y - 14 },
+        { x: batteryBase.x + 106, y: batteryBase.y + 20 },
+        { x: batteryBase.x + 74, y: batteryBase.y + 44 }
       ],
-      "#ced6e4"
-    );
-    drawPolygon(
-      [
-        { x: cannon.baseX + 26, y: cannon.baseY + 9 },
-        { x: cannon.baseX + 82, y: cannon.baseY - 46 },
-        { x: cannon.baseX + 90, y: cannon.baseY - 41 },
-        { x: cannon.baseX + 34, y: cannon.baseY + 12 }
-      ],
-      "#38475f"
-    );
-    drawPolygon(
-      [
-        { x: cannon.baseX + 44, y: cannon.baseY + 18 },
-        { x: cannon.baseX + 96, y: cannon.baseY - 30 },
-        { x: cannon.baseX + 118, y: cannon.baseY - 18 },
-        { x: cannon.baseX + 66, y: cannon.baseY + 28 }
-      ],
-      "#aab7cd"
+      "#314769"
     );
 
-    ctx.strokeStyle = glowColor;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(cannon.baseX + 47, cannon.baseY + 15);
-    ctx.lineTo(cannon.muzzleX - 8, cannon.muzzleY - 10);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cannon.baseX + 55, cannon.baseY + 22);
-    ctx.lineTo(cannon.muzzleX - 2, cannon.muzzleY - 2);
-    ctx.stroke();
+    batterySlots.forEach((slot, index) => {
+      const muzzle = tubeMuzzle(index);
+      const readyRatio = 1 - game.missiles[index].reload / 1.4;
+      const flash = game.missiles[index].flash;
 
-    for (let index = 0; index < 4; index += 1) {
-      const x = cannon.baseX - 8 + index * 18;
-      const y = cannon.baseY + 10 + index * 4;
       drawPolygon(
         [
-          { x, y },
-          { x: x + 12, y: y - 10 },
-          { x: x + 28, y: y - 2 },
-          { x: x + 16, y: y + 10 }
+          { x: slot.x, y: slot.y },
+          { x: slot.x + 14, y: slot.y - 11 },
+          { x: muzzle.x + 4, y: muzzle.y + 4 },
+          { x: muzzle.x - 10, y: muzzle.y + 15 }
         ],
-        index % 2 === 0 ? "#ff4e64" : "#f7c55a"
+        "#cad7ea"
       );
-    }
 
-    if (game.muzzleFlash > 0) {
-      ctx.fillStyle = `rgba(255, 234, 164, ${game.muzzleFlash * 0.9})`;
+      drawPolygon(
+        [
+          { x: slot.x + 3, y: slot.y + 2 },
+          { x: slot.x + 14, y: slot.y - 6 },
+          { x: muzzle.x - 4, y: muzzle.y + 8 },
+          { x: muzzle.x - 14, y: muzzle.y + 15 }
+        ],
+        "#405471"
+      );
+
+      ctx.fillStyle = game.missiles[index].reload <= 0 ? "#ff6677" : "#273548";
       ctx.beginPath();
-      ctx.arc(cannon.muzzleX, cannon.muzzleY, 10 + game.muzzleFlash * 18, 0, Math.PI * 2);
+      ctx.moveTo(slot.x + 12, slot.y - 2);
+      ctx.lineTo(slot.x + 22, slot.y - 10);
+      ctx.lineTo(slot.x + 44, slot.y - 22);
+      ctx.lineTo(slot.x + 36, slot.y - 12);
+      ctx.closePath();
       ctx.fill();
-    }
 
-    if (game.charge > 0) {
-      const chargeRatio = game.charge / 0.16;
-      ctx.strokeStyle = `rgba(94, 225, 255, ${0.28 + (1 - chargeRatio) * 0.6})`;
-      ctx.lineWidth = 10;
-      ctx.beginPath();
-      ctx.moveTo(cannon.baseX + 52, cannon.baseY + 18);
-      ctx.lineTo(cannon.muzzleX - 2, cannon.muzzleY - 6);
-      ctx.stroke();
-    }
+      ctx.fillStyle = "rgba(94, 225, 255, 0.12)";
+      ctx.fillRect(slot.x + 2, slot.y + 10, 42, 4);
+      ctx.fillStyle = "rgba(94, 225, 255, 0.72)";
+      ctx.fillRect(slot.x + 2, slot.y + 10, 42 * clamp(readyRatio, 0, 1), 4);
 
-    if (game.beam > 0) {
-      const { start, end } = beamSegment();
-      ctx.strokeStyle = `rgba(255,255,255,${0.36 + game.beam * 2.6})`;
-      ctx.lineWidth = game.beamWidth + 6;
-      ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(end.x, end.y);
-      ctx.stroke();
+      if (flash > 0) {
+        ctx.fillStyle = `rgba(255, 235, 166, ${flash * 4})`;
+        ctx.beginPath();
+        ctx.arc(muzzle.x - 2, muzzle.y + 8, 4 + flash * 14, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
 
-      ctx.strokeStyle = `rgba(94,225,255,${0.52 + game.beam * 4})`;
-      ctx.lineWidth = game.beamWidth;
-      ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(end.x, end.y);
-      ctx.stroke();
-    }
+    drawPolygon(
+      [
+        { x: batteryBase.x + 30, y: batteryBase.y + 2 },
+        { x: batteryBase.x + 44, y: batteryBase.y - 8 },
+        { x: batteryBase.x + 52, y: batteryBase.y - 2 },
+        { x: batteryBase.x + 38, y: batteryBase.y + 8 }
+      ],
+      "#f4c554"
+    );
+  }
+
+  function drawTargetMarker() {
+    if (game.target.show <= 0) return;
+    const alpha = Math.min(1, game.target.show);
+    ctx.strokeStyle = `rgba(255, 214, 126, ${0.18 + alpha * 0.72})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(game.target.x, game.target.y, 10 + (1 - alpha) * 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(game.target.x - 14, game.target.y);
+    ctx.lineTo(game.target.x - 6, game.target.y);
+    ctx.moveTo(game.target.x + 6, game.target.y);
+    ctx.lineTo(game.target.x + 14, game.target.y);
+    ctx.moveTo(game.target.x, game.target.y - 14);
+    ctx.lineTo(game.target.x, game.target.y - 6);
+    ctx.moveTo(game.target.x, game.target.y + 6);
+    ctx.lineTo(game.target.x, game.target.y + 14);
+    ctx.stroke();
   }
 
   function drawComet(comet) {
@@ -1331,9 +1357,45 @@ function createCometDestroyer(root, api) {
     ctx.fill();
   }
 
+  function drawMissile(salvo) {
+    const t = clamp(salvo.travel / salvo.duration, 0, 1);
+    const point = missilePoint(salvo, t);
+    const trailBack = missilePoint(salvo, Math.max(0, t - 0.08));
+    const angle = Math.atan2(point.y - trailBack.y, point.x - trailBack.x);
+
+    ctx.strokeStyle = "rgba(255, 222, 142, 0.52)";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(trailBack.x, trailBack.y);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(point.x, point.y);
+    ctx.rotate(angle);
+    ctx.fillStyle = "#f3f6fd";
+    ctx.fillRect(-10, -2.5, 14, 5);
+    ctx.fillStyle = "#ff6677";
+    ctx.beginPath();
+    ctx.moveTo(5, 0);
+    ctx.lineTo(-1, -4);
+    ctx.lineTo(-1, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#f7c55a";
+    ctx.fillRect(-12, -1.5, 4, 3);
+    ctx.restore();
+  }
+
   function drawExplosions() {
     game.explosions.forEach((explosion) => {
       const lifeRatio = explosion.life / explosion.maxLife;
+      ctx.fillStyle = `rgba(255, 196, 108, ${lifeRatio * 0.18})`;
+      ctx.beginPath();
+      ctx.arc(explosion.x, explosion.y, explosion.radius * (1.1 + (1 - lifeRatio)), 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.strokeStyle = explosion.color;
       ctx.lineWidth = 2 + (1 - lifeRatio) * 4;
       ctx.beginPath();
@@ -1345,8 +1407,10 @@ function createCometDestroyer(root, api) {
   function draw() {
     drawSky();
     drawCity();
+    drawTargetMarker();
     game.comets.forEach(drawComet);
-    drawRailAndCannon();
+    game.salvos.forEach(drawMissile);
+    drawBattery();
     drawExplosions();
 
     if (game.flash > 0) {
@@ -1359,7 +1423,7 @@ function createCometDestroyer(root, api) {
     comet.active = false;
     game.shields -= 1;
     game.flash = 1;
-    spawnExplosion(comet.target.x, comet.target.y, "rgba(255, 145, 92, 0.92)");
+    spawnExplosion(comet.target.x, comet.target.y, 22, "rgba(255, 145, 92, 0.92)");
     updateHud();
 
     if (game.shields <= 0) {
@@ -1370,28 +1434,23 @@ function createCometDestroyer(root, api) {
     api.setHint(`${game.shields} shields left.`);
   }
 
-  function resolveRailShot() {
-    const { start, end } = beamSegment();
+  function resolveExplosion(explosion) {
     let hits = 0;
-
     game.comets.forEach((comet) => {
       if (!comet.active) return;
-      const distance = pointToSegmentDistance(comet, start, end);
-      if (distance > comet.radius + game.beamWidth * 0.5) return;
-
+      if (Math.hypot(comet.x - explosion.x, comet.y - explosion.y) > explosion.hitRadius + comet.radius) {
+        return;
+      }
       comet.active = false;
       hits += 1;
       game.destroyed += 1;
-      spawnExplosion(comet.x, comet.y, "rgba(94, 225, 255, 0.92)");
+      spawnExplosion(comet.x, comet.y, 12, "rgba(94, 225, 255, 0.92)");
     });
 
     if (hits > 0) {
       api.setHint(`${hits} comet${hits > 1 ? "s" : ""} destroyed.`);
-    } else {
-      api.setHint("Missed the firing line.");
+      updateHud();
     }
-
-    updateHud();
   }
 
   function loop(timestamp) {
@@ -1400,36 +1459,36 @@ function createCometDestroyer(root, api) {
     const deltaSeconds = delta / 1000;
     game.lastTime = timestamp;
     game.time += deltaSeconds;
-    game.reload = Math.max(0, game.reload - deltaSeconds);
-    const chargeBefore = game.charge;
-    game.charge = Math.max(0, game.charge - deltaSeconds);
-    if (chargeBefore > 0 && game.charge === 0) {
-      game.beam = 0.08;
-      game.beamWidth = 10;
-      game.muzzleFlash = 1;
-      resolveRailShot();
-    }
-
-    game.beam = Math.max(0, game.beam - deltaSeconds);
-    game.beamWidth = 8 + game.beam * 48;
+    game.cadence = Math.max(0, game.cadence - deltaSeconds);
     game.flash = Math.max(0, game.flash - deltaSeconds * 2.8);
-    game.muzzleFlash = Math.max(0, game.muzzleFlash - deltaSeconds * 7);
-    game.railGlow = Math.max(0, game.railGlow - deltaSeconds * 3.2);
+    game.target.show = Math.max(0, game.target.show - deltaSeconds * 1.8);
+    game.missiles.forEach((missile) => {
+      missile.reload = Math.max(0, missile.reload - deltaSeconds);
+      missile.flash = Math.max(0, missile.flash - deltaSeconds * 5);
+    });
 
     const nextLevel = Math.floor(game.time / 50);
     if (nextLevel > game.level) {
       game.level = nextLevel;
-      api.setHint(`Level ${game.level + 1}. Comets accelerate.`);
+      api.setHint(`Level ${game.level + 1}. Sky gets busier.`);
     }
 
     game.spawnTick += delta;
     while (game.spawnTick >= currentDelay()) {
       game.spawnTick -= currentDelay();
       spawnComet();
-      if (game.time > 120 && Math.random() < 0.12 + clamp((game.time - 120) / 300, 0, 0.18)) {
+      if (game.time > 135 && Math.random() < 0.1 + clamp((game.time - 135) / 300, 0, 0.16)) {
         spawnComet(Math.random() > 0.5 ? 1 : -1);
       }
     }
+
+    game.salvos.forEach((salvo) => {
+      if (!salvo.active) return;
+      salvo.travel += deltaSeconds;
+      if (salvo.travel < salvo.duration) return;
+      salvo.active = false;
+      spawnExplosion(salvo.target.x, salvo.target.y, 26, "rgba(255, 182, 118, 0.92)");
+    });
 
     game.comets.forEach((comet) => {
       if (!comet.active) return;
@@ -1442,6 +1501,13 @@ function createCometDestroyer(root, api) {
       }
     });
 
+    game.explosions.forEach((explosion) => {
+      if (!explosion.hitRadius) return;
+      resolveExplosion(explosion);
+      explosion.hitRadius = 0;
+    });
+
+    game.salvos = game.salvos.filter((salvo) => salvo.active);
     game.comets = game.comets.filter((comet) => comet.active && comet.x > -40 && comet.y < height + 40);
     game.explosions = game.explosions.filter((explosion) => {
       explosion.life -= deltaSeconds;
@@ -1453,11 +1519,14 @@ function createCometDestroyer(root, api) {
     game.raf = requestAnimationFrame(loop);
   }
 
-  canvas.addEventListener("pointerdown", fire);
+  canvas.addEventListener("pointerdown", (event) => {
+    const point = mapPointer(event, canvas, width, height);
+    fireAt(point.x, point.y);
+  });
 
   api.setPrimary("Start", start);
   updateHud();
-  api.setHint("Fire when a comet crosses the rail line.");
+  api.setHint("Tap the sky to launch a missile.");
   draw();
 
   return {
@@ -1465,9 +1534,30 @@ function createCometDestroyer(root, api) {
       cancelAnimationFrame(game.raf);
     },
     onKey(event) {
+      const step = 12;
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        game.target.y = clamp(game.target.y - step, 66, height - 22);
+        game.target.show = 0.8;
+      }
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        game.target.y = clamp(game.target.y + step, 66, height - 22);
+        game.target.show = 0.8;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        game.target.x = clamp(game.target.x - step, 116, width - 10);
+        game.target.show = 0.8;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        game.target.x = clamp(game.target.x + step, 116, width - 10);
+        game.target.show = 0.8;
+      }
       if (event.key === " " || event.key === "Enter") {
         event.preventDefault();
-        fire();
+        fireAt(game.target.x, game.target.y);
       }
     }
   };
