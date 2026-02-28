@@ -3873,12 +3873,25 @@ function createDominoes(root, api) {
       return;
     }
 
-    game.chain.forEach((tile) => {
-      const node = document.createElement("div");
-      node.className = "domino-tile domino-tile-board";
-      node.innerHTML = buildTileMarkup({ a: tile.left, b: tile.right });
-      chainNode.appendChild(node);
-    });
+    const boardWidth = chainNode.clientWidth || root.clientWidth || window.innerWidth - 96;
+    const tilesPerRow = clamp(Math.floor(boardWidth / 74), 4, 6);
+
+    for (let start = 0; start < game.chain.length; start += tilesPerRow) {
+      const row = document.createElement("div");
+      const rowIndex = Math.floor(start / tilesPerRow);
+      row.className = `domino-chain-row${rowIndex % 2 === 1 ? " is-reverse" : ""}`;
+      const segment = game.chain.slice(start, start + tilesPerRow);
+      const visibleTiles = rowIndex % 2 === 1 ? [...segment].reverse() : segment;
+
+      visibleTiles.forEach((tile) => {
+        const node = document.createElement("div");
+        node.className = "domino-tile domino-tile-board";
+        node.innerHTML = buildTileMarkup({ a: tile.left, b: tile.right });
+        row.appendChild(node);
+      });
+
+      chainNode.appendChild(row);
+    }
   }
 
   function renderPlayerRack() {
