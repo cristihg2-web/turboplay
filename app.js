@@ -3186,56 +3186,248 @@ function createBrickPop(root, api) {
   );
   root.appendChild(stage);
 
+  const paddleBaseWidth = 96;
+  const paddleY = height - 28;
+  const dropTable = [
+    { type: "extra", weight: 0.22 },
+    { type: "power", weight: 0.24 },
+    { type: "wide", weight: 0.3 },
+    { type: "narrow", weight: 0.24 }
+  ];
+
   const game = {
-    paddleX: width / 2 - 38,
-    ball: null,
+    paddleX: width / 2 - paddleBaseWidth / 2,
+    paddleWidth: paddleBaseWidth,
+    balls: [],
     bricks: [],
+    items: [],
     score: 0,
+    round: 1,
+    roundDelay: 0,
+    powerHitsRemaining: 0,
     running: false,
     raf: 0,
     lastTime: 0
   };
 
+  function clampPaddle() {
+    game.paddleX = clamp(game.paddleX, 10, width - game.paddleWidth - 10);
+  }
+
+  function weightedItemType() {
+    const total = dropTable.reduce((sum, item) => sum + item.weight, 0);
+    let roll = Math.random() * total;
+    for (const item of dropTable) {
+      roll -= item.weight;
+      if (roll <= 0) return item.type;
+    }
+    return "wide";
+  }
+
+  function maybeDropItem(brick) {
+    const chance = Math.min(0.16, 0.08 + game.round * 0.012);
+    if (Math.random() > chance) return null;
+    return {
+      x: brick.x + brick.width / 2,
+      y: brick.y + brick.height / 2,
+      vy: 88 + game.round * 10,
+      type: weightedItemType(),
+      size: 18
+    };
+  }
+
   function makeBricks() {
     const bricks = [];
     const colors = ["#ffbf47", "#ff6ca8", "#5ee1ff", "#76f0c2"];
-    for (let row = 0; row < 5; row += 1) {
+    const rows = Math.min(7, 5 + Math.floor((game.round - 1) / 2));
+    for (let row = 0; row < rows; row += 1) {
       for (let column = 0; column < 5; column += 1) {
-        bricks.push({
+        const brick = {
           x: 18 + column * 58,
           y: 22 + row * 30,
           width: 50,
           height: 18,
-          color: colors[row % colors.length],
+          color: colors[(row + game.round - 1) % colors.length],
           alive: true
-        });
+        };
+        brick.drop = maybeDropItem(brick);
+        bricks.push(brick);
       }
     }
     return bricks;
   }
 
+  function targetBallSpeed() {
+    return 196 + (game.round - 1) * 14;
+  }
+
+  function createBall(x = width / 2, y = height - 74, direction = 1) {
+    const speed = targetBallSpeed();
+    const horizontal = clamp((82 + game.round * 8) * direction, -220, 220);
+    const vertical = -Math.sqrt(Math.max(speed * speed - horizontal * horizontal, 12000));
+    return {
+      x,
+      y,
+      vx: horizontal,
+      vy: vertical,
+      radius: 8
+    };
+  }
+
+  function retuneBallSpeeds() {
+    const speed = targetBallSpeed();
+    game.balls.forEach((ball) => {
+      const angle = Math.atan2(ball.vy, ball.vx);
+      ball.vx = Math.cos(angle) * speed;
+      ball.vy = Math.sin(angle) * speed;
+    });
+  }
+
+  function startRound(firstRound = false) {
+    game.bricks = makeBricks();
+    game.items = [];
+    game.roundDelay = 0;
+    retuneBallSpeeds();
+
+    if (firstRound || game.balls.length === 0) {
+      game.balls = [createBall()];
+    }
+
+    api.sound(firstRound ? "start" : "round");
+    api.setHint(firstRound ? "Drag or tap the controls." : `Round ${game.round}. Bricks speed up.`);
+  }
+
   function reset() {
     api.countPlay();
-    api.sound("start");
-    game.paddleX = width / 2 - 48;
-    game.ball = { x: width / 2, y: height - 74, vx: 128, vy: -148, radius: 8 };
-    game.bricks = makeBricks();
+    game.paddleWidth = paddleBaseWidth;
+    game.paddleX = width / 2 - game.paddleWidth / 2;
+    game.balls = [];
+    game.items = [];
     game.score = 0;
+    game.round = 1;
+    game.roundDelay = 0;
+    game.powerHitsRemaining = 0;
     game.running = true;
     game.lastTime = performance.now();
     api.setCurrent(0);
-    api.setHint("Drag or tap the controls.");
     api.setPrimary("Restart", reset);
+    startRound(true);
     cancelAnimationFrame(game.raf);
     game.raf = requestAnimationFrame(loop);
   }
 
   function stop(message) {
     game.running = false;
-    api.sound(message === "Wall cleared." ? "round" : "fail");
+    api.sound("fail");
     api.updateBest(game.score);
     api.setHint(message);
     api.setPrimary("Start", reset);
+  }
+
+  function drawBrick(brick) {
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
+    ctx.fillRect(brick.x + 2, brick.y + 3, brick.width, brick.height);
+    ctx.fillStyle = brick.color;
+    ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    ctx.fillRect(brick.x + 2, brick.y + 2, brick.width - 4, 4);
+    ctx.fillStyle = "rgba(6, 12, 24, 0.16)";
+    ctx.fillRect(brick.x + 2, brick.y + brick.height - 5, brick.width - 4, 3);
+  }
+
+  function drawItem(item) {
+    const palette = {
+      extra: { shell: "#76f0c2", core: "#ffffff" },
+      power: { shell: "#ffbf47", core: "#fff0ad" },
+      wide: { shell: "#5ee1ff", core: "#eaf9ff" },
+      narrow: { shell: "#ff6ca8", core: "#ffe5f0" }
+    }[item.type];
+
+    ctx.save();
+    ctx.translate(item.x, item.y);
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.beginPath();
+    ctx.ellipse(0, 4, item.size * 0.56, item.size * 0.28, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = palette.shell;
+    ctx.beginPath();
+    ctx.arc(0, 0, item.size * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = palette.core;
+    if (item.type === "extra") {
+      ctx.fillRect(-2, -7, 4, 14);
+      ctx.fillRect(-7, -2, 14, 4);
+    } else if (item.type === "power") {
+      ctx.beginPath();
+      ctx.moveTo(-3, -8);
+      ctx.lineTo(3, -1);
+      ctx.lineTo(0, -1);
+      ctx.lineTo(4, 8);
+      ctx.lineTo(-3, 1);
+      ctx.lineTo(0, 1);
+      ctx.closePath();
+      ctx.fill();
+    } else if (item.type === "wide") {
+      ctx.beginPath();
+      ctx.moveTo(-8, 0);
+      ctx.lineTo(-1, -5);
+      ctx.lineTo(-1, -2);
+      ctx.lineTo(8, -2);
+      ctx.lineTo(8, 2);
+      ctx.lineTo(-1, 2);
+      ctx.lineTo(-1, 5);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(8, 0);
+      ctx.lineTo(1, -5);
+      ctx.lineTo(1, -2);
+      ctx.lineTo(-8, -2);
+      ctx.lineTo(-8, 2);
+      ctx.lineTo(1, 2);
+      ctx.lineTo(1, 5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawPaddle() {
+    ctx.fillStyle = "rgba(0,0,0,0.24)";
+    ctx.fillRect(game.paddleX + 3, paddleY + 4, game.paddleWidth, 10);
+    ctx.fillStyle = game.powerHitsRemaining > 0 ? "#ffd86c" : "#ffbf47";
+    ctx.fillRect(game.paddleX, paddleY, game.paddleWidth, 10);
+    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    ctx.fillRect(game.paddleX + 3, paddleY + 2, Math.max(0, game.paddleWidth - 6), 3);
+  }
+
+  function drawBall(ball) {
+    ctx.fillStyle = game.powerHitsRemaining > 0 ? "#ffd86c" : "#ffffff";
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+    ctx.fill();
+    if (game.powerHitsRemaining > 0) {
+      ctx.strokeStyle = "rgba(255, 216, 108, 0.34)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius + 3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  function drawHud() {
+    ctx.fillStyle = "rgba(255,255,255,0.78)";
+    ctx.font = '700 12px "SFMono-Regular", "Roboto Mono", monospace';
+    ctx.textAlign = "left";
+    ctx.fillText(`R${game.round}`, 18, height - 12);
+    ctx.fillText(`${game.balls.length}B`, 62, height - 12);
+    if (game.powerHitsRemaining > 0) {
+      ctx.fillStyle = "#ffd86c";
+      ctx.fillText(`P${game.powerHitsRemaining}`, 102, height - 12);
+    }
   }
 
   function draw() {
@@ -3245,88 +3437,184 @@ function createBrickPop(root, api) {
 
     game.bricks.forEach((brick) => {
       if (!brick.alive) return;
-      ctx.fillStyle = brick.color;
-      ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+      drawBrick(brick);
     });
 
-    ctx.fillStyle = "#ffbf47";
-    ctx.fillRect(game.paddleX, height - 28, 96, 10);
+    game.items.forEach(drawItem);
+    drawPaddle();
+    game.balls.forEach(drawBall);
+    drawHud();
 
-    if (!game.ball) return;
-
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(game.ball.x, game.ball.y, game.ball.radius, 0, Math.PI * 2);
-    ctx.fill();
+    if (game.roundDelay > 0) {
+      ctx.fillStyle = "rgba(15, 23, 48, 0.46)";
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.font = '800 26px "Avenir Next Condensed", "Franklin Gothic Medium", "Arial Narrow", sans-serif';
+      ctx.fillText(`Round ${game.round}`, width / 2, height / 2 - 4);
+      ctx.font = '700 12px "SFMono-Regular", "Roboto Mono", monospace';
+      ctx.fillStyle = "#ffd86c";
+      ctx.fillText("incoming", width / 2, height / 2 + 20);
+    }
   }
 
   function movePaddle(clientX) {
     const rect = canvas.getBoundingClientRect();
     const x = ((clientX - rect.left) / rect.width) * width;
-    game.paddleX = clamp(x - 48, 10, width - 106);
+    game.paddleX = x - game.paddleWidth / 2;
+    clampPaddle();
   }
 
   function nudgePaddle(delta) {
     if (!game.running) return;
-    game.paddleX = clamp(game.paddleX + delta, 10, width - 106);
+    game.paddleX += delta;
+    clampPaddle();
   }
 
-  function update(delta) {
-    game.ball.x += (game.ball.vx * delta) / 1000;
-    game.ball.y += (game.ball.vy * delta) / 1000;
+  function bounceOffPaddle(ball) {
+    api.sound("paddle");
+    ball.vy = -Math.abs(ball.vy);
+    ball.vx = (ball.x - (game.paddleX + game.paddleWidth / 2)) * 4;
+  }
 
-    if (game.ball.x <= game.ball.radius || game.ball.x >= width - game.ball.radius) {
-      game.ball.vx *= -1;
-    }
-    if (game.ball.y <= game.ball.radius) {
-      game.ball.vy *= -1;
-    }
-
-    if (
-      game.ball.y + game.ball.radius >= height - 28 &&
-      game.ball.x >= game.paddleX &&
-      game.ball.x <= game.paddleX + 96 &&
-      game.ball.vy > 0
-    ) {
-      api.sound("paddle");
-      game.ball.vy *= -1;
-      game.ball.vx = (game.ball.x - (game.paddleX + 48)) * 4;
+  function handleBrickHit(ball, brick) {
+    brick.alive = false;
+    if (brick.drop) {
+      game.items.push({ ...brick.drop });
     }
 
-    for (const brick of game.bricks) {
-      if (!brick.alive) continue;
-      if (
-        game.ball.x + game.ball.radius > brick.x &&
-        game.ball.x - game.ball.radius < brick.x + brick.width &&
-        game.ball.y + game.ball.radius > brick.y &&
-        game.ball.y - game.ball.radius < brick.y + brick.height
-      ) {
-        brick.alive = false;
-        api.sound("brick");
-        game.ball.vy *= -1;
-        game.score += 10;
-        api.setCurrent(game.score);
-        api.updateBest(game.score);
-        break;
-      }
-    }
+    api.sound("brick");
+    game.score += 10;
+    api.setCurrent(game.score);
+    api.updateBest(game.score);
 
-    if (game.bricks.every((brick) => !brick.alive)) {
-      stop("Wall cleared.");
+    if (game.powerHitsRemaining > 0) {
+      game.powerHitsRemaining -= 1;
       return;
     }
 
-    if (game.ball.y > height + 20) {
-      stop("Ball lost.");
+    ball.vy *= -1;
+  }
+
+  function applyItem(item) {
+    if (item.type === "extra") {
+      const direction = game.balls.length % 2 === 0 ? -1 : 1;
+      game.balls.push(createBall(game.paddleX + game.paddleWidth / 2, paddleY - 14, direction));
+      api.sound("collect");
+      api.setHint("Extra ball online.");
+      return;
+    }
+
+    if (item.type === "power") {
+      game.powerHitsRemaining += 2;
+      api.sound("collect");
+      api.setHint(`Power shot x${game.powerHitsRemaining}.`);
+      return;
+    }
+
+    const factor = item.type === "wide" ? 1.15 : 0.85;
+    const center = game.paddleX + game.paddleWidth / 2;
+    game.paddleWidth = clamp(game.paddleWidth * factor, paddleBaseWidth * 0.7, paddleBaseWidth * 1.5);
+    game.paddleX = center - game.paddleWidth / 2;
+    clampPaddle();
+    api.sound(item.type === "wide" ? "collect" : "deny");
+    api.setHint(item.type === "wide" ? "Paddle widened." : "Paddle reduced.");
+  }
+
+  function updateItems(delta) {
+    const seconds = delta / 1000;
+    game.items = game.items.filter((item) => {
+      item.y += item.vy * seconds;
+
+      if (
+        item.y + item.size * 0.5 >= paddleY &&
+        item.y - item.size * 0.5 <= paddleY + 10 &&
+        item.x >= game.paddleX &&
+        item.x <= game.paddleX + game.paddleWidth
+      ) {
+        applyItem(item);
+        return false;
+      }
+
+      return item.y < height + 30;
+    });
+  }
+
+  function updateBalls(delta) {
+    const seconds = delta / 1000;
+    game.balls = game.balls.filter((ball) => {
+      ball.x += (ball.vx * seconds);
+      ball.y += (ball.vy * seconds);
+
+      if (ball.x <= ball.radius) {
+        ball.x = ball.radius;
+        ball.vx = Math.abs(ball.vx);
+      } else if (ball.x >= width - ball.radius) {
+        ball.x = width - ball.radius;
+        ball.vx = -Math.abs(ball.vx);
+      }
+
+      if (ball.y <= ball.radius) {
+        ball.y = ball.radius;
+        ball.vy = Math.abs(ball.vy);
+      }
+
+      if (
+        ball.y + ball.radius >= paddleY &&
+        ball.y - ball.radius <= paddleY + 10 &&
+        ball.x >= game.paddleX &&
+        ball.x <= game.paddleX + game.paddleWidth &&
+        ball.vy > 0
+      ) {
+        bounceOffPaddle(ball);
+      }
+
+      for (const brick of game.bricks) {
+        if (!brick.alive) continue;
+        if (
+          ball.x + ball.radius > brick.x &&
+          ball.x - ball.radius < brick.x + brick.width &&
+          ball.y + ball.radius > brick.y &&
+          ball.y - ball.radius < brick.y + brick.height
+        ) {
+          handleBrickHit(ball, brick);
+          break;
+        }
+      }
+
+      return ball.y <= height + 24;
+    });
+  }
+
+  function update(delta) {
+    if (game.roundDelay > 0) {
+      game.roundDelay = Math.max(0, game.roundDelay - delta / 1000);
+      if (game.roundDelay === 0) {
+        startRound(false);
+      }
+      return;
+    }
+
+    updateItems(delta);
+    updateBalls(delta);
+
+    if (game.bricks.every((brick) => !brick.alive)) {
+      game.round += 1;
+      game.roundDelay = 0.8;
+      api.setHint(`Round clear. Round ${game.round} incoming.`);
+      return;
+    }
+
+    if (game.balls.length === 0) {
+      stop(`Ball lost on round ${game.round}.`);
     }
   }
 
   function loop(timestamp) {
-    draw();
-    if (!game.running) return;
     const delta = Math.min(32, timestamp - game.lastTime || 16);
     game.lastTime = timestamp;
     update(delta);
+    draw();
     if (game.running) {
       game.raf = requestAnimationFrame(loop);
     }
