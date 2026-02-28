@@ -21,7 +21,7 @@ const state = {
     playerIndex: 0,
     flashing: null,
     locked: false,
-    message: "Press start to see the first sequence.",
+    message: "Press start.",
     timers: []
   },
   radar: {
@@ -31,7 +31,7 @@ const state = {
     x: 44,
     y: 44,
     size: 62,
-    message: "Start the round and catch as many targets as you can.",
+    message: "Tap fast for 30 seconds.",
     tickTimer: null,
     moveTimer: null
   },
@@ -143,7 +143,7 @@ function createMergeGame() {
     score: 0,
     over: false,
     won: false,
-    message: "Merge matching tiles to upgrade the cabin."
+    message: "Merge matching tiles."
   };
 }
 
@@ -242,7 +242,7 @@ function moveMerge(direction) {
   if (state.merge.over) return;
   const result = moveGrid(state.merge.grid, direction);
   if (!result.moved) {
-    state.merge.message = "That move does not change the cabin.";
+    state.merge.message = "No move.";
     renderMerge();
     return;
   }
@@ -254,16 +254,16 @@ function moveMerge(direction) {
   const tile = highestTile(state.merge.grid);
   if (tile >= 2048 && !state.merge.won) {
     state.merge.won = true;
-    state.merge.message = "Executive cabin unlocked.";
+    state.merge.message = "2048 reached.";
   } else if (result.scoreGain > 0) {
-    state.merge.message = `You gained ${result.scoreGain} points.`;
+    state.merge.message = `+${result.scoreGain} points.`;
   } else {
-    state.merge.message = "Cabin reshuffled.";
+    state.merge.message = "Shifted.";
   }
 
   if (!hasMove(state.merge.grid)) {
     state.merge.over = true;
-    state.merge.message = "No moves left. Restart to fly again.";
+    state.merge.message = "Game over.";
   }
 
   syncMergeStats();
@@ -333,7 +333,7 @@ function nextRound() {
   state.memory.sequence.push(Math.floor(Math.random() * 4));
   state.memory.round = state.memory.sequence.length;
   state.memory.playerIndex = 0;
-  state.memory.message = `Round ${state.memory.round}. Memorize the route.`;
+  state.memory.message = `Round ${state.memory.round}.`;
   playSequence();
 }
 
@@ -345,7 +345,7 @@ function startMemory() {
   state.memory.playerIndex = 0;
   state.memory.locked = true;
   state.memory.flashing = null;
-  state.memory.message = "Preparing the first sequence...";
+  state.memory.message = "Loading...";
   renderMemory();
   nextRound();
 }
@@ -365,7 +365,7 @@ function handlePadPress(index) {
   if (index !== expected) {
     updateMemoryBest(Math.max(0, state.memory.round - 1));
     state.memory.locked = true;
-    state.memory.message = `You missed round ${state.memory.round}.`;
+    state.memory.message = `Missed round ${state.memory.round}.`;
     renderMemory();
     return;
   }
@@ -375,13 +375,13 @@ function handlePadPress(index) {
   if (state.memory.playerIndex === state.memory.sequence.length) {
     updateMemoryBest(state.memory.round);
     state.memory.locked = true;
-    state.memory.message = "Perfect. The next route gets longer.";
+    state.memory.message = "Correct.";
     renderMemory();
     const nextTimer = window.setTimeout(nextRound, 760);
     state.memory.timers.push(nextTimer);
   } else {
     const pending = state.memory.sequence.length - state.memory.playerIndex;
-    state.memory.message = `Good. ${pending} tap${pending === 1 ? "" : "s"} left.`;
+    state.memory.message = `${pending} tap${pending === 1 ? "" : "s"} left.`;
     renderMemory();
   }
 }
@@ -423,7 +423,7 @@ function endRadar() {
     saveObject(STORAGE_KEYS.stats, stats);
     renderStats();
   }
-  state.radar.message = `Time. You caught ${state.radar.score} targets.`;
+  state.radar.message = `Time. ${state.radar.score} hits.`;
   renderRadar();
 }
 
@@ -434,7 +434,7 @@ function startRadar() {
   state.radar.timeLeft = 30;
   state.radar.playing = true;
   state.radar.size = 62;
-  state.radar.message = "Round live. Tap the target before it jumps sectors.";
+  state.radar.message = "Go.";
   moveRadarTarget();
   renderRadar();
 
@@ -459,7 +459,7 @@ function hitRadar() {
   if (!state.radar.playing) return;
   state.radar.score += 1;
   state.radar.size = Math.max(38, 62 - state.radar.score);
-  state.radar.message = `Target locked. Total ${state.radar.score}.`;
+  state.radar.message = `${state.radar.score} hits.`;
   if (state.radar.score > stats.radarBest) {
     stats.radarBest = state.radar.score;
     saveObject(STORAGE_KEYS.stats, stats);
@@ -472,16 +472,15 @@ function hitRadar() {
 function registerOffline() {
   if (!("serviceWorker" in navigator)) {
     cacheStatusEl.textContent =
-      "Your browser does not support service workers. The site still stays lightweight.";
+      "Offline cache unavailable.";
     return;
   }
   window.addEventListener("load", async () => {
     try {
       await navigator.serviceWorker.register("./sw.js");
-      cacheStatusEl.textContent =
-        "Local cache ready. After this load, Turboplay can open without a network.";
+      cacheStatusEl.textContent = "Offline ready.";
     } catch {
-      cacheStatusEl.textContent = "Offline cache registration failed.";
+      cacheStatusEl.textContent = "Offline setup failed.";
     }
   });
 }
@@ -490,12 +489,11 @@ function setupInstall() {
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     state.installPrompt = event;
-    installStatusEl.textContent =
-      "Install is available. You can pin Turboplay to your home screen.";
+    installStatusEl.textContent = "Install available.";
   });
 
   window.addEventListener("appinstalled", () => {
-    installStatusEl.textContent = "Turboplay installed successfully.";
+    installStatusEl.textContent = "Installed.";
     state.installPrompt = null;
   });
 
@@ -504,11 +502,11 @@ function setupInstall() {
       state.installPrompt.prompt();
       const outcome = await state.installPrompt.userChoice;
       installStatusEl.textContent =
-        outcome.outcome === "accepted" ? "Installed successfully." : "Install canceled.";
+        outcome.outcome === "accepted" ? "Installed." : "Install canceled.";
       state.installPrompt = null;
       return;
     }
-    installStatusEl.textContent = "On iPhone or iPad, use Share and then Add to Home Screen.";
+    installStatusEl.textContent = "Use Add to Home Screen.";
   });
 }
 
