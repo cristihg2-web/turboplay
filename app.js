@@ -3782,20 +3782,11 @@ function createDominoes(root, api) {
     return game.cpuHand.some((tile) => getPlayableSides(tile).length > 0);
   }
 
-  function findBestStarter() {
-    let best = null;
-    const evaluate = (tile, owner) => {
-      const isDouble = tile.a === tile.b;
-      const sum = tile.a + tile.b;
-      const rank = isDouble ? 100 + sum : sum;
-      if (!best || rank > best.rank || (rank === best.rank && owner === "player")) {
-        best = { owner, tile, rank };
-      }
-    };
-
-    game.playerHand.forEach((tile) => evaluate(tile, "player"));
-    game.cpuHand.forEach((tile) => evaluate(tile, "cpu"));
-    return best;
+  function chooseRandomStarter() {
+    const owner = Math.random() < 0.5 ? "player" : "cpu";
+    const hand = owner === "player" ? game.playerHand : game.cpuHand;
+    const tile = hand[randomInt(0, hand.length - 1)];
+    return { owner, tile };
   }
 
   function removeTile(hand, id) {
@@ -4122,7 +4113,7 @@ function createDominoes(root, api) {
     sortHand(game.playerHand);
     sortHand(game.cpuHand);
 
-    const starter = findBestStarter();
+    const starter = chooseRandomStarter();
     if (starter) {
       playTile(starter.owner, starter.tile.id, "start");
       if (starter.owner === "player") {
