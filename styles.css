@@ -969,13 +969,23 @@ button {
 }
 
 .domino-rack {
-  display: grid;
+  display: flex;
   gap: 8px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.domino-rack::-webkit-scrollbar {
+  display: none;
 }
 
 .domino-empty {
   display: grid;
   place-items: center;
+  width: 100%;
+  min-width: 100%;
   min-height: 80px;
   padding: 14px;
   border-radius: 16px;
@@ -994,12 +1004,12 @@ button {
   min-height: 52px;
 }
 
-.domino-rack-cpu {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+.domino-rack-cpu .domino-tile {
+  flex: 0 0 40px;
 }
 
-.domino-rack-player {
-  grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+.domino-rack-player .domino-tile {
+  flex: 0 0 50px;
 }
 
 .domino-chain-panel {
@@ -1085,9 +1095,10 @@ button {
   position: relative;
   display: grid;
   grid-template-rows: 1fr auto 1fr;
+  width: 100%;
   min-width: 0;
   aspect-ratio: 0.6;
-  padding: 8px;
+  padding: 6px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -1099,6 +1110,12 @@ button {
     transform 0.16s ease,
     border-color 0.16s ease,
     box-shadow 0.16s ease;
+}
+
+.domino-tile-board {
+  flex: 0 0 72px;
+  padding: 10px;
+  border-radius: 18px;
 }
 
 .domino-tile-player.is-playable {
@@ -1134,8 +1151,8 @@ button {
 .domino-half {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  padding: 4px;
+  gap: 3px;
+  padding: 3px;
 }
 
 .domino-half-back {
@@ -1162,7 +1179,7 @@ button {
   aspect-ratio: 1;
   border-radius: 999px;
   background: rgba(15, 23, 48, 0.08);
-  transform: scale(0.62);
+  transform: scale(0.66);
 }
 
 .domino-pip.is-on {
@@ -1672,12 +1689,16 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .domino-rack-cpu {
-    grid-template-columns: repeat(7, minmax(32px, 1fr));
+  .domino-rack-cpu .domino-tile {
+    flex-basis: 36px;
   }
 
-  .domino-rack-player {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .domino-rack-player .domino-tile {
+    flex-basis: 44px;
+  }
+
+  .domino-tile-board {
+    flex-basis: 62px;
   }
 
   .domino-controls .touch-button {
