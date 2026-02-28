@@ -2525,6 +2525,12 @@ function createGridStacker(root, api) {
   );
   root.appendChild(stage);
 
+  const blockHeight = 20;
+  const stackStep = 24;
+  const stackBaseY = height - 36;
+  const movingStartY = stackBaseY - stackStep;
+  const scrollAnchorY = 76;
+
   const game = {
     placed: [],
     moving: null,
@@ -2537,8 +2543,8 @@ function createGridStacker(root, api) {
 
   function reset() {
     api.countPlay();
-    game.placed = [{ x: 70, y: height - 36, width: 180, color: "#5ee1ff" }];
-    game.moving = { x: 0, y: height - 60, width: 180, color: "#ffbf47" };
+    game.placed = [{ x: 70, y: stackBaseY, width: 180, color: "#5ee1ff" }];
+    game.moving = { x: 0, y: movingStartY, width: 180, color: "#ffbf47" };
     game.floors = 0;
     game.direction = 1;
     game.running = true;
@@ -2576,18 +2582,18 @@ function createGridStacker(root, api) {
       color: choice(["#ffbf47", "#5ee1ff", "#ff6ca8", "#76f0c2"])
     });
 
-    if (game.moving.y < 90) {
-      game.placed = game.placed.map((block) => ({ ...block, y: block.y + 24 }));
+    if (game.moving.y <= scrollAnchorY) {
+      game.placed = game.placed.map((block) => ({ ...block, y: block.y + stackStep }));
       game.moving = {
         x: 0,
-        y: 90,
+        y: scrollAnchorY,
         width: overlap,
         color: choice(["#ffbf47", "#5ee1ff", "#ff6ca8", "#76f0c2"])
       };
     } else {
       game.moving = {
         x: 0,
-        y: game.moving.y - 24,
+        y: game.moving.y - stackStep,
         width: overlap,
         color: choice(["#ffbf47", "#5ee1ff", "#ff6ca8", "#76f0c2"])
       };
@@ -2602,12 +2608,12 @@ function createGridStacker(root, api) {
 
     game.placed.forEach((block) => {
       ctx.fillStyle = block.color;
-      ctx.fillRect(block.x, block.y, block.width, 20);
+      ctx.fillRect(block.x, block.y, block.width, blockHeight);
     });
 
     if (game.moving) {
       ctx.fillStyle = game.moving.color;
-      ctx.fillRect(game.moving.x, game.moving.y, game.moving.width, 20);
+      ctx.fillRect(game.moving.x, game.moving.y, game.moving.width, blockHeight);
     }
   }
 
