@@ -93,7 +93,10 @@ const state = {
 };
 
 const els = {
+  railWrap: document.querySelector("[data-game-rail-wrap]"),
   rail: document.querySelector("[data-game-rail]"),
+  railLeft: document.querySelector("[data-rail-left]"),
+  railRight: document.querySelector("[data-rail-right]"),
   cabinet: document.querySelector("[data-cabinet]"),
   kicker: document.querySelector("[data-game-kicker]"),
   title: document.querySelector("[data-game-title]"),
@@ -397,6 +400,55 @@ function renderRail() {
     button.addEventListener("click", () => switchGame(game.id));
     els.rail.appendChild(button);
   });
+  syncRailControls();
+}
+
+function syncRailControls() {
+  if (!els.rail || !els.railWrap || !els.railLeft || !els.railRight) return;
+
+  const maxScroll = Math.max(0, els.rail.scrollWidth - els.rail.clientWidth);
+  const canScrollLeft = els.rail.scrollLeft > 8;
+  const canScrollRight = els.rail.scrollLeft < maxScroll - 8;
+  const hasOverflow = maxScroll > 8;
+
+  els.railWrap.classList.toggle("can-scroll-left", hasOverflow && canScrollLeft);
+  els.railWrap.classList.toggle("can-scroll-right", hasOverflow && canScrollRight);
+  els.railLeft.disabled = !hasOverflow || !canScrollLeft;
+  els.railRight.disabled = !hasOverflow || !canScrollRight;
+}
+
+function scrollRail(direction) {
+  if (!els.rail) return;
+  const delta = Math.max(180, Math.round(els.rail.clientWidth * 0.72)) * direction;
+  els.rail.scrollBy({ left: delta, behavior: "smooth" });
+}
+
+function revealActiveGame(gameId) {
+  const activePill = els.rail?.querySelector(`[data-game-id="${gameId}"]`);
+  if (!activePill) return;
+  activePill.scrollIntoView({
+    behavior: "smooth",
+    block: "nearest",
+    inline: "center"
+  });
+  window.setTimeout(syncRailControls, 180);
+}
+
+function setupRailControls() {
+  if (!els.rail || !els.railLeft || !els.railRight) return;
+
+  els.railLeft.addEventListener("click", () => {
+    scrollRail(-1);
+  });
+
+  els.railRight.addEventListener("click", () => {
+    scrollRail(1);
+  });
+
+  els.rail.addEventListener("scroll", syncRailControls, { passive: true });
+  window.addEventListener("resize", syncRailControls);
+  window.addEventListener("load", syncRailControls);
+  window.setTimeout(syncRailControls, 0);
 }
 
 function setPrimaryAction(label, handler) {
@@ -589,6 +641,7 @@ function switchGame(gameId) {
   document.querySelectorAll(".game-pill").forEach((pill) => {
     pill.classList.toggle("is-active", pill.dataset.gameId === gameId);
   });
+  revealActiveGame(gameId);
 
   els.kicker.textContent = game.kicker;
   els.title.textContent = game.name;
@@ -4163,6 +4216,7 @@ function createOrbitMatch(root, api) {
 }
 
 renderRail();
+setupRailControls();
 setupAudio();
 registerOffline();
 setupInstall();

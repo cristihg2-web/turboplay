@@ -34,7 +34,15 @@
         <span data-install-status></span>
       </div>
 
-      <nav class="game-rail" data-game-rail aria-label="Game picker"></nav>
+      <div class="game-rail-wrap" data-game-rail-wrap>
+        <button class="rail-arrow rail-arrow-left" type="button" data-rail-left aria-label="Scroll games left">
+          <span aria-hidden="true">&#8249;</span>
+        </button>
+        <nav class="game-rail" data-game-rail aria-label="Game picker"></nav>
+        <button class="rail-arrow rail-arrow-right" type="button" data-rail-right aria-label="Scroll games right">
+          <span aria-hidden="true">&#8250;</span>
+        </button>
+      </div>
 
       <section class="cabinet" data-cabinet>
         <div class="cabinet-head">
