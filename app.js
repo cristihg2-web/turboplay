@@ -3868,15 +3868,12 @@ function createDominoes(root, api) {
 
   function renderChain() {
     chainNode.innerHTML = "";
-    const visible = game.chain.length > 8 ? game.chain.slice(-8) : game.chain;
-    if (game.chain.length > visible.length) {
-      const more = document.createElement("div");
-      more.className = "domino-more";
-      more.textContent = "…";
-      chainNode.appendChild(more);
+    if (!game.chain.length) {
+      chainNode.appendChild(createRackPlaceholder("Chain waiting for first tile"));
+      return;
     }
 
-    visible.forEach((tile) => {
+    game.chain.forEach((tile) => {
       const node = document.createElement("div");
       node.className = "domino-tile domino-tile-board";
       node.innerHTML = buildTileMarkup({ a: tile.left, b: tile.right });

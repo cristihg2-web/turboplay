@@ -1053,8 +1053,10 @@ button {
 
 .domino-chain {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 8px;
-  overflow-x: auto;
+  min-height: 96px;
   padding-bottom: 2px;
 }
 
@@ -1113,8 +1115,8 @@ button {
 }
 
 .domino-tile-board {
-  flex: 0 0 72px;
-  padding: 10px;
+  flex: 0 0 64px;
+  padding: 9px;
   border-radius: 18px;
 }
 
@@ -1698,7 +1700,7 @@ button {
   }
 
   .domino-tile-board {
-    flex-basis: 62px;
+    flex-basis: 56px;
   }
 
   .domino-controls .touch-button {
