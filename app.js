@@ -1231,11 +1231,14 @@ function createLaneSplit(root, api) {
 
   const game = {
     lane: 1,
+    lanePosition: 1,
     obstacles: [],
     score: 0,
     spawnTimer: 0,
     running: false,
-    speed: 180,
+    speed: 172,
+    level: 0,
+    graceUsed: false,
     raf: 0,
     lastTime: 0
   };
@@ -1267,7 +1270,7 @@ function createLaneSplit(root, api) {
   function roadMetrics(y) {
     const depth = clamp((y - road.horizon) / (height - road.horizon), 0, 1);
     const roadWidth = 92 + depth * 210;
-    const bend = Math.sin(game.score * 0.08 + depth * 3.8) * 18 * depth;
+    const bend = Math.sin((game.score / 1000) * 1.4 + depth * 3.8) * 18 * depth;
     const center = width / 2 + bend;
     const laneWidth = roadWidth / 3;
 
@@ -1383,7 +1386,7 @@ function createLaneSplit(root, api) {
       const nextY = Math.min(height, y + 8);
       const current = roadMetrics(y);
       const next = roadMetrics(nextY);
-      const stripe = Math.floor((y + game.score * 16) / 24);
+      const stripe = Math.floor((y + game.score * 0.36) / 24);
       const roadColor = stripe % 2 === 0 ? "#464d61" : "#353b4e";
       const grassColor = stripe % 2 === 0 ? "#159b6d" : "#12885f";
       const shoulderColor = stripe % 2 === 0 ? "#ffe9f2" : "#ff4f7f";
@@ -1459,7 +1462,7 @@ function createLaneSplit(root, api) {
     }
 
     for (let index = 0; index < 5; index += 1) {
-      const depth = ((index * 0.19) + (game.score * 0.012)) % 1;
+      const depth = ((index * 0.19) + (game.score * 0.0009)) % 1;
       if (depth < 0.12) continue;
       const y = road.horizon + depth * (height - road.horizon);
       const metrics = roadMetrics(y);
@@ -1470,10 +1473,11 @@ function createLaneSplit(root, api) {
     }
   }
 
-  function drawCar(centerX, baseY, carWidth, palette, player = false) {
-    const carHeight = carWidth * 1.48;
+  function drawCar(centerX, baseY, carWidth, palette, player = false, steer = 0) {
+    const carHeight = carWidth * 1.62;
     const x = centerX - carWidth / 2;
     const y = baseY - carHeight;
+    const lean = steer * carWidth * 0.06;
 
     ctx.fillStyle = "rgba(8, 10, 20, 0.34)";
     ctx.beginPath();
@@ -1481,48 +1485,56 @@ function createLaneSplit(root, api) {
     ctx.fill();
 
     ctx.fillStyle = "#14151d";
-    ctx.fillRect(x + carWidth * 0.08, y + carHeight * 0.72, carWidth * 0.14, carHeight * 0.16);
-    ctx.fillRect(x + carWidth * 0.78, y + carHeight * 0.72, carWidth * 0.14, carHeight * 0.16);
+    ctx.fillRect(x + carWidth * 0.05, y + carHeight * 0.64, carWidth * 0.16, carHeight * 0.22);
+    ctx.fillRect(x + carWidth * 0.79, y + carHeight * 0.64, carWidth * 0.16, carHeight * 0.22);
 
     ctx.fillStyle = palette.body;
     ctx.beginPath();
-    ctx.moveTo(x + carWidth * 0.14, y + carHeight * 0.98);
-    ctx.lineTo(x + carWidth * 0.06, y + carHeight * 0.48);
-    ctx.lineTo(x + carWidth * 0.18, y + carHeight * 0.18);
-    ctx.lineTo(x + carWidth * 0.82, y + carHeight * 0.18);
-    ctx.lineTo(x + carWidth * 0.94, y + carHeight * 0.48);
-    ctx.lineTo(x + carWidth * 0.86, y + carHeight * 0.98);
+    ctx.moveTo(x + carWidth * 0.16 + lean, y + carHeight * 0.98);
+    ctx.lineTo(x + carWidth * 0.07 + lean, y + carHeight * 0.68);
+    ctx.lineTo(x + carWidth * 0.13 + lean, y + carHeight * 0.26);
+    ctx.quadraticCurveTo(x + carWidth * 0.28 + lean, y + carHeight * 0.05, x + carWidth * 0.5 + lean, y + carHeight * 0.03);
+    ctx.quadraticCurveTo(x + carWidth * 0.72 + lean, y + carHeight * 0.05, x + carWidth * 0.87 + lean, y + carHeight * 0.26);
+    ctx.lineTo(x + carWidth * 0.93 + lean, y + carHeight * 0.68);
+    ctx.lineTo(x + carWidth * 0.84 + lean, y + carHeight * 0.98);
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle = palette.roof;
     ctx.beginPath();
-    ctx.moveTo(x + carWidth * 0.28, y + carHeight * 0.66);
-    ctx.lineTo(x + carWidth * 0.34, y + carHeight * 0.28);
-    ctx.lineTo(x + carWidth * 0.66, y + carHeight * 0.28);
-    ctx.lineTo(x + carWidth * 0.72, y + carHeight * 0.66);
+    ctx.moveTo(x + carWidth * 0.27 + lean, y + carHeight * 0.68);
+    ctx.lineTo(x + carWidth * 0.33 + lean, y + carHeight * 0.26);
+    ctx.lineTo(x + carWidth * 0.67 + lean, y + carHeight * 0.26);
+    ctx.lineTo(x + carWidth * 0.73 + lean, y + carHeight * 0.68);
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle = palette.glass;
     ctx.beginPath();
-    ctx.moveTo(x + carWidth * 0.34, y + carHeight * 0.62);
-    ctx.lineTo(x + carWidth * 0.38, y + carHeight * 0.34);
-    ctx.lineTo(x + carWidth * 0.62, y + carHeight * 0.34);
-    ctx.lineTo(x + carWidth * 0.66, y + carHeight * 0.62);
+    ctx.moveTo(x + carWidth * 0.34 + lean, y + carHeight * 0.61);
+    ctx.lineTo(x + carWidth * 0.38 + lean, y + carHeight * 0.33);
+    ctx.lineTo(x + carWidth * 0.62 + lean, y + carHeight * 0.33);
+    ctx.lineTo(x + carWidth * 0.66 + lean, y + carHeight * 0.61);
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle = palette.accent;
-    ctx.fillRect(x + carWidth * 0.2, y + carHeight * 0.7, carWidth * 0.6, Math.max(2, carHeight * 0.05));
+    ctx.fillRect(x + carWidth * 0.22 + lean, y + carHeight * 0.73, carWidth * 0.56, Math.max(2, carHeight * 0.04));
+
+    ctx.fillStyle = "rgba(255,255,255,0.2)";
+    ctx.fillRect(x + carWidth * 0.47 + lean, y + carHeight * 0.26, carWidth * 0.06, carHeight * 0.43);
 
     ctx.fillStyle = player ? "#fff5a8" : "#ff5d87";
-    ctx.fillRect(x + carWidth * 0.2, y + carHeight * 0.9, carWidth * 0.12, Math.max(2, carHeight * 0.06));
-    ctx.fillRect(x + carWidth * 0.68, y + carHeight * 0.9, carWidth * 0.12, Math.max(2, carHeight * 0.06));
+    ctx.fillRect(x + carWidth * 0.14 + lean, y + carHeight * 0.88, carWidth * 0.13, Math.max(2, carHeight * 0.06));
+    ctx.fillRect(x + carWidth * 0.73 + lean, y + carHeight * 0.88, carWidth * 0.13, Math.max(2, carHeight * 0.06));
+
+    ctx.fillStyle = player ? "#fff7c9" : "rgba(255,255,255,0.72)";
+    ctx.fillRect(x + carWidth * 0.18 + lean, y + carHeight * 0.15, carWidth * 0.11, Math.max(2, carHeight * 0.05));
+    ctx.fillRect(x + carWidth * 0.71 + lean, y + carHeight * 0.15, carWidth * 0.11, Math.max(2, carHeight * 0.05));
 
     if (player) {
-      ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
-      ctx.fillRect(x + carWidth * 0.48, y + carHeight * 0.18, carWidth * 0.08, carHeight * 0.76);
+      ctx.fillStyle = "#0d1d35";
+      ctx.fillRect(x + carWidth * 0.44 + lean, y + carHeight * 0.84, carWidth * 0.12, Math.max(2, carHeight * 0.08));
     }
   }
 
@@ -1534,11 +1546,14 @@ function createLaneSplit(root, api) {
   function start() {
     api.countPlay();
     game.lane = 1;
+    game.lanePosition = 1;
     game.obstacles = [];
     game.score = 0;
     game.spawnTimer = 0;
     game.running = true;
-    game.speed = 180;
+    game.speed = 172;
+    game.level = 0;
+    game.graceUsed = false;
     game.lastTime = performance.now();
     api.setCurrent(0);
     api.setHint("Tap sides or swipe lanes.");
@@ -1554,6 +1569,16 @@ function createLaneSplit(root, api) {
     api.setPrimary("Start", start);
   }
 
+  function registerSoftCrash() {
+    if (game.graceUsed) {
+      stop("Second hit.");
+      return;
+    }
+
+    game.graceUsed = true;
+    api.setHint("Side scrape. Next hit ends the run.");
+  }
+
   function draw() {
     ctx.clearRect(0, 0, width, height);
     drawRoadScene();
@@ -1563,29 +1588,48 @@ function createLaneSplit(root, api) {
       .sort((a, b) => a.y - b.y)
       .forEach((obstacle) => {
         const metrics = roadMetrics(obstacle.y);
-        const carWidth = 22 + metrics.depth * 42;
+        const carWidth = 24 + metrics.depth * 44;
         drawCar(laneCenterAt(obstacle.lane, obstacle.y), obstacle.y, carWidth, obstacle.palette);
       });
 
-    drawCar(laneCenterAt(game.lane, road.playerBaseY), road.playerBaseY, 68, playerPalette, true);
+    drawCar(
+      laneCenterAt(game.lanePosition, road.playerBaseY),
+      road.playerBaseY,
+      72,
+      playerPalette,
+      true,
+      game.lane - game.lanePosition
+    );
   }
 
   function loop(timestamp) {
-    draw();
     if (!game.running) return;
     const delta = Math.min(32, timestamp - game.lastTime || 16);
     game.lastTime = timestamp;
-    game.score += delta * 0.02;
+    const distanceGain = (delta / 1000) * 96;
+    game.score += distanceGain;
     game.spawnTimer += delta;
-    game.speed += delta * 0.0042;
+    game.lanePosition += (game.lane - game.lanePosition) * Math.min(1, delta * 0.012);
+
+    const level = Math.floor(game.score / 2000);
+    const progress = (game.score % 2000) / 2000;
+    if (level > game.level) {
+      game.level = level;
+      api.setHint(`${level * 2} km. Traffic speeds up.`);
+    }
+
+    game.speed = 172 + level * 22 + progress * 18;
     api.setCurrent(Math.floor(game.score));
 
-    if (game.spawnTimer > 920) {
+    const spawnEvery = Math.max(460, 940 - level * 90 - progress * 80);
+
+    if (game.spawnTimer > spawnEvery) {
       game.spawnTimer = 0;
       game.obstacles.push({
         lane: randomInt(0, 2),
         y: road.horizon - 16,
-        palette: choice(trafficPalettes)
+        palette: choice(trafficPalettes),
+        hit: false
       });
     }
 
@@ -1593,19 +1637,33 @@ function createLaneSplit(root, api) {
       obstacle.y += (game.speed * delta) / 1000;
 
       const playerY = road.playerBaseY;
-      if (
-        obstacle.lane === game.lane &&
-        obstacle.y > playerY - 88 &&
-        obstacle.y < playerY + 12
-      ) {
-        stop();
-        return false;
+      const verticalOverlap = obstacle.y > playerY - 96 && obstacle.y < playerY + 10;
+      if (verticalOverlap && !obstacle.hit) {
+        const obstacleWidth = 24 + roadMetrics(obstacle.y).depth * 44;
+        const obstacleCenter = laneCenterAt(obstacle.lane, obstacle.y);
+        const playerCenter = laneCenterAt(game.lanePosition, playerY);
+        const lateralGap = Math.abs(playerCenter - obstacleCenter);
+        const totalWidth = (72 + obstacleWidth) / 2;
+        const isChanging = Math.abs(game.lane - game.lanePosition) > 0.08;
+
+        if (lateralGap < totalWidth * 0.42) {
+          obstacle.hit = true;
+
+          if (isChanging && lateralGap > totalWidth * 0.24) {
+            registerSoftCrash();
+            return false;
+          }
+
+          stop("Direct crash.");
+          return false;
+        }
       }
 
       return obstacle.y < height + 56;
     });
 
     if (game.running) {
+      draw();
       game.raf = requestAnimationFrame(loop);
     }
   }
