@@ -263,6 +263,45 @@ function bindSwipe(node, callbacks) {
   };
 }
 
+function buildTouchControls(rows) {
+  const wrap = document.createElement("div");
+  wrap.className = "touch-controls";
+
+  rows.forEach((row) => {
+    const rowEl = document.createElement("div");
+    rowEl.className = "touch-row";
+
+    row.forEach((config) => {
+      if (!config) {
+        const spacer = document.createElement("div");
+        spacer.className = "touch-spacer";
+        rowEl.appendChild(spacer);
+        return;
+      }
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `touch-button${config.accent ? " is-accent" : ""}`;
+      button.textContent = config.label;
+      button.setAttribute("aria-label", config.ariaLabel || config.label);
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        config.onPress();
+      });
+      button.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        config.onPress();
+      });
+      rowEl.appendChild(button);
+    });
+
+    wrap.appendChild(rowEl);
+  });
+
+  return wrap;
+}
+
 function createGameApi(game) {
   return {
     setCurrentLabel(label) {
@@ -398,8 +437,8 @@ function createNeonMerge(root, api) {
   stage.className = "dom-stage";
   stage.innerHTML = `
     <div class="score-row">
-      <div class="score-pill">Swipe <strong>4x4</strong></div>
-      <div class="score-pill">Touch <strong>Ready</strong></div>
+      <div class="score-pill">Board <strong>4x4</strong></div>
+      <div class="score-pill">Moves <strong>Swipe / Tap</strong></div>
     </div>
     <div class="merge-grid"></div>
   `;
@@ -413,6 +452,15 @@ function createNeonMerge(root, api) {
     boardEl.appendChild(cell);
     return cell;
   });
+  const controls = buildTouchControls([
+    [{ label: "Up", onPress: () => move("up") }],
+    [
+      { label: "Left", onPress: () => move("left") },
+      { label: "Down", onPress: () => move("down"), accent: true },
+      { label: "Right", onPress: () => move("right") }
+    ]
+  ]);
+  stage.appendChild(controls);
 
   let game = null;
   const removeSwipe = bindSwipe(boardEl, {
@@ -532,7 +580,7 @@ function createNeonMerge(root, api) {
     game = {
       grid: createGrid(),
       score: 0,
-      message: "Swipe to merge."
+      message: "Swipe or tap arrows."
     };
     addRandom(game.grid);
     addRandom(game.grid);
@@ -652,13 +700,13 @@ function createPulsePads(root, api) {
         memory.flashing = null;
         renderPads();
         step += 1;
-        const nextTimer = window.setTimeout(flash, 180);
+        const nextTimer = window.setTimeout(flash, 220);
         memory.timers.push(nextTimer);
-      }, 360);
+      }, 420);
       memory.timers.push(offTimer);
     };
 
-    const startTimer = window.setTimeout(flash, 260);
+    const startTimer = window.setTimeout(flash, 320);
     memory.timers.push(startTimer);
   }
 
@@ -706,7 +754,7 @@ function createPulsePads(root, api) {
       api.updateBest(memory.round);
       memory.locked = true;
       api.setHint("Correct.");
-      const nextTimer = window.setTimeout(nextRound, 720);
+      const nextTimer = window.setTimeout(nextRound, 840);
       memory.timers.push(nextTimer);
     } else {
       api.setHint(`${memory.sequence.length - memory.index} left.`);
@@ -735,7 +783,7 @@ function createRadarRush(root, api) {
   stage.className = "target-stage";
   const badge = document.createElement("div");
   badge.className = "stage-chip";
-  badge.textContent = "20s";
+  badge.textContent = "24s";
   const target = document.createElement("button");
   target.type = "button";
   target.className = "target-dot";
@@ -746,9 +794,9 @@ function createRadarRush(root, api) {
 
   const radar = {
     score: 0,
-    timeLeft: 20,
+    timeLeft: 24,
     active: false,
-    size: 64,
+    size: 78,
     tickTimer: null,
     moveTimer: null
   };
@@ -778,12 +826,12 @@ function createRadarRush(root, api) {
   function start() {
     api.countPlay();
     radar.score = 0;
-    radar.timeLeft = 20;
+    radar.timeLeft = 24;
     radar.active = true;
-    radar.size = 64;
+    radar.size = 78;
     api.setCurrent(0);
-    api.setHint("Go.");
-    badge.textContent = "20s";
+    api.setHint("Tap the beacon.");
+    badge.textContent = "24s";
     moveTarget();
 
     radar.tickTimer = window.setInterval(() => {
@@ -798,7 +846,7 @@ function createRadarRush(root, api) {
     radar.moveTimer = window.setInterval(() => {
       if (!radar.active) return;
       moveTarget();
-    }, 620);
+    }, 760);
 
     api.setPrimary("Restart", start);
   }
@@ -806,7 +854,7 @@ function createRadarRush(root, api) {
   target.addEventListener("click", () => {
     if (!radar.active) return;
     radar.score += 1;
-    radar.size = Math.max(38, 64 - radar.score);
+    radar.size = Math.max(52, 78 - Math.floor(radar.score / 2) * 2);
     api.setCurrent(radar.score);
     api.setHint(`${radar.score} hits.`);
     moveTarget();
@@ -831,17 +879,17 @@ function createCometCatch(root, api) {
   stage.className = "comet-stage";
   const badge = document.createElement("div");
   badge.className = "stage-chip";
-  badge.textContent = "3 shields";
+  badge.textContent = "4 shields";
   stage.appendChild(badge);
   root.appendChild(stage);
 
   const game = {
     score: 0,
-    lives: 3,
+    lives: 4,
     active: false,
-    spawnDelay: 620,
+    spawnDelay: 860,
     spawnTick: 0,
-    timer: 20,
+    timer: 24,
     lastTime: 0,
     raf: 0,
     comets: [],
@@ -858,13 +906,13 @@ function createCometCatch(root, api) {
     comet.type = "button";
     comet.className = "comet-dot";
     comet.setAttribute("aria-label", "Comet");
-    const size = randomInt(42, 58);
+    const size = randomInt(52, 68);
     const maxX = Math.max(12, (stage.clientWidth || 320) - size - 12);
     const entry = {
       x: randomInt(12, maxX),
       y: -size,
       size,
-      speed: randomInt(160, 260),
+      speed: randomInt(120, 190),
       el: comet
     };
     comet.style.width = `${size}px`;
@@ -901,7 +949,7 @@ function createCometCatch(root, api) {
     if (game.spawnTick >= game.spawnDelay) {
       game.spawnTick = 0;
       spawnComet();
-      game.spawnDelay = Math.max(260, game.spawnDelay - 8);
+      game.spawnDelay = Math.max(420, game.spawnDelay - 12);
     }
 
     if (game.secondTick >= 1000) {
@@ -940,16 +988,16 @@ function createCometCatch(root, api) {
     api.countPlay();
     clearComets();
     game.score = 0;
-    game.lives = 3;
+    game.lives = 4;
     game.active = true;
-    game.spawnDelay = 620;
+    game.spawnDelay = 860;
     game.spawnTick = 0;
-    game.timer = 20;
+    game.timer = 24;
     game.secondTick = 0;
     game.lastTime = performance.now();
-    badge.textContent = "20s / 3";
+    badge.textContent = "24s / 4";
     api.setCurrent(0);
-    api.setHint("Tap every comet.");
+    api.setHint("Tap the slow ones first.");
     api.setPrimary("Restart", start);
     game.raf = requestAnimationFrame(frame);
   }
@@ -972,6 +1020,16 @@ function createSnakeByte(root, api) {
   stage.className = "canvas-stage";
   const { canvas, ctx, width, height } = makeCanvas(320, 320);
   stage.appendChild(canvas);
+  stage.appendChild(
+    buildTouchControls([
+      [{ label: "Up", onPress: () => turn(0, -1) }],
+      [
+        { label: "Left", onPress: () => turn(-1, 0) },
+        { label: "Down", onPress: () => turn(0, 1), accent: true },
+        { label: "Right", onPress: () => turn(1, 0) }
+      ]
+    ])
+  );
   root.appendChild(stage);
 
   const gridSize = 16;
@@ -982,7 +1040,7 @@ function createSnakeByte(root, api) {
     direction: { x: 1, y: 0 },
     nextDirection: { x: 1, y: 0 },
     accumulator: 0,
-    speed: 140,
+    speed: 170,
     running: false,
     raf: 0,
     lastTime: 0
@@ -1015,11 +1073,11 @@ function createSnakeByte(root, api) {
     game.direction = { x: 1, y: 0 };
     game.nextDirection = { x: 1, y: 0 };
     game.accumulator = 0;
-    game.speed = 140;
+    game.speed = 170;
     game.running = true;
     game.lastTime = performance.now();
     api.setCurrent(game.snake.length);
-    api.setHint("Swipe to steer.");
+    api.setHint("Swipe or tap the pad.");
     spawnFood();
     api.setPrimary("Restart", reset);
     cancelAnimationFrame(game.raf);
@@ -1057,7 +1115,7 @@ function createSnakeByte(root, api) {
     if (head.x === game.food.x && head.y === game.food.y) {
       api.setCurrent(game.snake.length);
       api.updateBest(game.snake.length);
-      game.speed = Math.max(78, game.speed - 2);
+      game.speed = Math.max(110, game.speed - 1.5);
       spawnFood();
       api.setHint("Byte collected.");
     } else {
@@ -1083,8 +1141,10 @@ function createSnakeByte(root, api) {
       ctx.stroke();
     }
 
-    ctx.fillStyle = "#ffbf47";
-    ctx.fillRect(game.food.x * cell + 4, game.food.y * cell + 4, cell - 8, cell - 8);
+    if (game.food) {
+      ctx.fillStyle = "#ffbf47";
+      ctx.fillRect(game.food.x * cell + 4, game.food.y * cell + 4, cell - 8, cell - 8);
+    }
 
     game.snake.forEach((node, index) => {
       ctx.fillStyle = index === 0 ? "#76f0c2" : "#5ee1ff";
@@ -1136,6 +1196,14 @@ function createLaneSplit(root, api) {
   stage.className = "canvas-stage";
   const { canvas, ctx, width, height } = makeCanvas(320, 420);
   stage.appendChild(canvas);
+  stage.appendChild(
+    buildTouchControls([
+      [
+        { label: "Left", onPress: () => changeLane(-1) },
+        { label: "Right", onPress: () => changeLane(1), accent: true }
+      ]
+    ])
+  );
   root.appendChild(stage);
 
   const game = {
@@ -1144,7 +1212,7 @@ function createLaneSplit(root, api) {
     score: 0,
     spawnTimer: 0,
     running: false,
-    speed: 210,
+    speed: 180,
     raf: 0,
     lastTime: 0
   };
@@ -1170,10 +1238,10 @@ function createLaneSplit(root, api) {
     game.score = 0;
     game.spawnTimer = 0;
     game.running = true;
-    game.speed = 210;
+    game.speed = 180;
     game.lastTime = performance.now();
     api.setCurrent(0);
-    api.setHint("Swipe lanes.");
+    api.setHint("Tap or swipe lanes.");
     api.setPrimary("Restart", start);
     cancelAnimationFrame(game.raf);
     game.raf = requestAnimationFrame(loop);
@@ -1227,10 +1295,10 @@ function createLaneSplit(root, api) {
     game.lastTime = timestamp;
     game.score += delta * 0.02;
     game.spawnTimer += delta;
-    game.speed += delta * 0.006;
+    game.speed += delta * 0.0042;
     api.setCurrent(Math.floor(game.score));
 
-    if (game.spawnTimer > 720) {
+    if (game.spawnTimer > 920) {
       game.spawnTimer = 0;
       game.obstacles.push({
         lane: randomInt(0, 2),
@@ -1245,8 +1313,8 @@ function createLaneSplit(root, api) {
       const playerY = height - 98;
       if (
         obstacle.lane === game.lane &&
-        obstacle.y + 78 > playerY &&
-        obstacle.y < playerY + 82
+        obstacle.y + 68 > playerY + 8 &&
+        obstacle.y + 8 < playerY + 74
       ) {
         stop();
         return false;
@@ -1295,6 +1363,11 @@ function createGridStacker(root, api) {
   stage.className = "canvas-stage";
   const { canvas, ctx, width, height } = makeCanvas(320, 400);
   stage.appendChild(canvas);
+  stage.appendChild(
+    buildTouchControls([
+      [{ label: "Drop", onPress: drop, accent: true }]
+    ])
+  );
   root.appendChild(stage);
 
   const game = {
@@ -1316,7 +1389,7 @@ function createGridStacker(root, api) {
     game.running = true;
     game.lastTime = performance.now();
     api.setCurrent(0);
-    api.setHint("Tap to drop.");
+    api.setHint("Tap the stage or Drop.");
     api.setPrimary("Restart", reset);
     cancelAnimationFrame(game.raf);
     game.raf = requestAnimationFrame(loop);
@@ -1388,7 +1461,7 @@ function createGridStacker(root, api) {
     if (!game.running) return;
     const delta = Math.min(32, timestamp - game.lastTime || 16);
     game.lastTime = timestamp;
-    game.moving.x += game.direction * delta * 0.2;
+    game.moving.x += game.direction * delta * 0.14;
 
     if (game.moving.x <= 0) {
       game.direction = 1;
@@ -1420,7 +1493,7 @@ function createLockPick(root, api) {
     <div class="meter-wrap">
       <div class="score-row">
         <div class="score-pill">Timing <strong>Tap</strong></div>
-        <div class="score-pill">Zone <strong>Shrinks</strong></div>
+        <div class="score-pill">Zone <strong>Forgiving</strong></div>
       </div>
       <div class="meter-track">
         <div class="meter-target"></div>
@@ -1428,6 +1501,11 @@ function createLockPick(root, api) {
       </div>
     </div>
   `;
+  stage.appendChild(
+    buildTouchControls([
+      [{ label: "Lock", onPress: tapLock, accent: true }]
+    ])
+  );
   root.appendChild(stage);
 
   const track = stage.querySelector(".meter-track");
@@ -1437,8 +1515,8 @@ function createLockPick(root, api) {
   const game = {
     running: false,
     chain: 0,
-    speed: 0.0045,
-    targetWidth: 110,
+    speed: 0.0036,
+    targetWidth: 132,
     targetLeft: 90,
     time: 0,
     raf: 0
@@ -1465,12 +1543,12 @@ function createLockPick(root, api) {
     api.countPlay();
     game.running = true;
     game.chain = 0;
-    game.speed = 0.0045;
-    game.targetWidth = 110;
+    game.speed = 0.0036;
+    game.targetWidth = 132;
     game.time = 0;
     positionTarget();
     api.setCurrent(0);
-    api.setHint("Tap inside the zone.");
+    api.setHint("Tap when the cursor crosses the zone.");
     api.setPrimary("Restart", start);
     cancelAnimationFrame(game.raf);
     game.raf = requestAnimationFrame(loop);
@@ -1495,8 +1573,8 @@ function createLockPick(root, api) {
     }
 
     game.chain += 1;
-    game.speed += 0.0007;
-    game.targetWidth = Math.max(34, game.targetWidth - 8);
+    game.speed += 0.00045;
+    game.targetWidth = Math.max(54, game.targetWidth - 6);
     api.setCurrent(game.chain);
     api.updateBest(game.chain);
     api.setHint(`${game.chain} clean locks.`);
@@ -1510,7 +1588,10 @@ function createLockPick(root, api) {
     game.raf = requestAnimationFrame(loop);
   }
 
-  stage.addEventListener("click", tapLock);
+  stage.addEventListener("click", (event) => {
+    if (event.target.closest(".touch-controls")) return;
+    tapLock();
+  });
   api.setPrimary("Start", start);
   positionTarget();
   renderCursor();
@@ -1530,6 +1611,14 @@ function createBrickPop(root, api) {
   stage.className = "canvas-stage";
   const { canvas, ctx, width, height } = makeCanvas(320, 420);
   stage.appendChild(canvas);
+  stage.appendChild(
+    buildTouchControls([
+      [
+        { label: "Left", onPress: () => nudgePaddle(-26) },
+        { label: "Right", onPress: () => nudgePaddle(26), accent: true }
+      ]
+    ])
+  );
   root.appendChild(stage);
 
   const game = {
@@ -1562,14 +1651,14 @@ function createBrickPop(root, api) {
 
   function reset() {
     api.countPlay();
-    game.paddleX = width / 2 - 38;
-    game.ball = { x: width / 2, y: height - 74, vx: 150, vy: -170, radius: 8 };
+    game.paddleX = width / 2 - 48;
+    game.ball = { x: width / 2, y: height - 74, vx: 128, vy: -148, radius: 8 };
     game.bricks = makeBricks();
     game.score = 0;
     game.running = true;
     game.lastTime = performance.now();
     api.setCurrent(0);
-    api.setHint("Drag the paddle.");
+    api.setHint("Drag or tap the controls.");
     api.setPrimary("Restart", reset);
     cancelAnimationFrame(game.raf);
     game.raf = requestAnimationFrame(loop);
@@ -1594,7 +1683,10 @@ function createBrickPop(root, api) {
     });
 
     ctx.fillStyle = "#ffbf47";
-    ctx.fillRect(game.paddleX, height - 28, 76, 10);
+    ctx.fillRect(game.paddleX, height - 28, 96, 10);
+
+    if (!game.ball) return;
+
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.arc(game.ball.x, game.ball.y, game.ball.radius, 0, Math.PI * 2);
@@ -1604,7 +1696,12 @@ function createBrickPop(root, api) {
   function movePaddle(clientX) {
     const rect = canvas.getBoundingClientRect();
     const x = ((clientX - rect.left) / rect.width) * width;
-    game.paddleX = clamp(x - 38, 10, width - 86);
+    game.paddleX = clamp(x - 48, 10, width - 106);
+  }
+
+  function nudgePaddle(delta) {
+    if (!game.running) return;
+    game.paddleX = clamp(game.paddleX + delta, 10, width - 106);
   }
 
   function update(delta) {
@@ -1621,11 +1718,11 @@ function createBrickPop(root, api) {
     if (
       game.ball.y + game.ball.radius >= height - 28 &&
       game.ball.x >= game.paddleX &&
-      game.ball.x <= game.paddleX + 76 &&
+      game.ball.x <= game.paddleX + 96 &&
       game.ball.vy > 0
     ) {
       game.ball.vy *= -1;
-      game.ball.vx = (game.ball.x - (game.paddleX + 38)) * 4.4;
+      game.ball.vx = (game.ball.x - (game.paddleX + 48)) * 4;
     }
 
     for (const brick of game.bricks) {
@@ -1691,12 +1788,17 @@ function createOrbitMatch(root, api) {
   stage.className = "canvas-stage";
   const { canvas, ctx, width, height } = makeCanvas(320, 360);
   stage.appendChild(canvas);
+  stage.appendChild(
+    buildTouchControls([
+      [{ label: "Match", onPress: tap, accent: true }]
+    ])
+  );
   root.appendChild(stage);
 
   const colors = ["#ffbf47", "#5ee1ff", "#ff6ca8", "#76f0c2"];
   const game = {
     rotation: 0,
-    speed: 0.0018,
+    speed: 0.00125,
     targetIndex: 0,
     score: 0,
     running: false,
@@ -1704,9 +1806,15 @@ function createOrbitMatch(root, api) {
     lastTime: 0
   };
 
-  function activeIndex() {
-    const normalized = ((((Math.PI * 1.5) - game.rotation) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    return Math.floor(normalized / (Math.PI / 2)) % 4;
+  function angleDistance(a, b) {
+    const full = Math.PI * 2;
+    const diff = Math.abs(a - b) % full;
+    return diff > Math.PI ? full - diff : diff;
+  }
+
+  function alignmentError() {
+    const segmentCenter = game.rotation + game.targetIndex * (Math.PI / 2) + Math.PI / 4;
+    return angleDistance(segmentCenter, Math.PI * 1.5);
   }
 
   function draw() {
@@ -1746,13 +1854,13 @@ function createOrbitMatch(root, api) {
   function start() {
     api.countPlay();
     game.rotation = 0;
-    game.speed = 0.0018;
+    game.speed = 0.00125;
     game.targetIndex = randomInt(0, 3);
     game.score = 0;
     game.running = true;
     game.lastTime = performance.now();
     api.setCurrent(0);
-    api.setHint("Tap on color match.");
+    api.setHint("Tap when the top wedge matches.");
     api.setPrimary("Restart", start);
     cancelAnimationFrame(game.raf);
     game.raf = requestAnimationFrame(loop);
@@ -1767,13 +1875,13 @@ function createOrbitMatch(root, api) {
 
   function tap() {
     if (!game.running) return;
-    if (activeIndex() !== game.targetIndex) {
+    if (alignmentError() > 0.38) {
       stop("Missed.");
       return;
     }
 
     game.score += 1;
-    game.speed += 0.00018;
+    game.speed += 0.00011;
     game.targetIndex = randomInt(0, 3);
     api.setCurrent(game.score);
     api.updateBest(game.score);
