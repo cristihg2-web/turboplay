@@ -4090,7 +4090,7 @@ function createOrbitMatch(root, api) {
 
   const stage = document.createElement("div");
   stage.className = "canvas-stage";
-  const { canvas, ctx, width, height } = makeCanvas(320, 360);
+  const { canvas, ctx, width, height } = makeCanvas(320, 380);
   stage.appendChild(canvas);
   stage.appendChild(
     buildTouchControls([
@@ -4100,25 +4100,136 @@ function createOrbitMatch(root, api) {
   root.appendChild(stage);
 
   const colors = ["#ffbf47", "#5ee1ff", "#ff6ca8", "#76f0c2"];
+  const lockCenter = Math.PI * 1.5;
+  const segmentSweep = Math.PI / 2;
   const game = {
     rotation: 0,
-    speed: 0.00125,
+    speed: 0.00102,
     targetIndex: 0,
     score: 0,
+    lockFlash: 0,
+    ripple: 0,
+    cooldown: 0,
     running: false,
     raf: 0,
     lastTime: 0
   };
 
-  function angleDistance(a, b) {
+  function signedAngleDistance(a, b) {
     const full = Math.PI * 2;
-    const diff = Math.abs(a - b) % full;
-    return diff > Math.PI ? full - diff : diff;
+    let diff = (a - b) % full;
+    if (diff > Math.PI) diff -= full;
+    if (diff < -Math.PI) diff += full;
+    return diff;
+  }
+
+  function targetCenterAngle(index = game.targetIndex) {
+    return game.rotation + index * segmentSweep + segmentSweep / 2;
   }
 
   function alignmentError() {
-    const segmentCenter = game.rotation + game.targetIndex * (Math.PI / 2) + Math.PI / 4;
-    return angleDistance(segmentCenter, Math.PI * 1.5);
+    return signedAngleDistance(targetCenterAngle(), lockCenter);
+  }
+
+  function alignmentDistance() {
+    return Math.abs(alignmentError());
+  }
+
+  function currentTolerance() {
+    return Math.max(0.22, 0.44 - game.score * 0.01);
+  }
+
+  function chooseNextTarget() {
+    const nextOffset = randomInt(1, 3);
+    game.targetIndex = (game.targetIndex + nextOffset) % 4;
+  }
+
+  function drawRing(centerX, centerY, radius, innerRadius) {
+    const gap = 0.06;
+    const targetGlow = 1 - clamp(alignmentDistance() / (currentTolerance() + 0.18), 0, 1);
+
+    colors.forEach((color, index) => {
+      const start = game.rotation + index * segmentSweep + gap;
+      const end = start + segmentSweep - gap * 2;
+      const isTarget = index === game.targetIndex;
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, start, end);
+      ctx.arc(centerX, centerY, innerRadius, end, start, true);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      if (isTarget) {
+        ctx.fillStyle = `rgba(255,255,255,${0.08 + targetGlow * 0.16})`;
+        ctx.fill();
+      }
+
+      ctx.strokeStyle = `rgba(255,255,255,${isTarget ? 0.2 + targetGlow * 0.3 : 0.1})`;
+      ctx.lineWidth = isTarget ? 3 : 2;
+      ctx.stroke();
+    });
+  }
+
+  function drawLockZone(centerX, centerY, radius) {
+    const tolerance = currentTolerance();
+    const pulse = 1 - clamp(alignmentDistance() / (tolerance + 0.12), 0, 1);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 18;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius + 14, lockCenter - tolerance, lockCenter + tolerance);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(255, 216, 108, ${0.3 + pulse * 0.4 + game.lockFlash * 0.25})`;
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius + 14, lockCenter - tolerance * 0.82, lockCenter + tolerance * 0.82);
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY - radius - 34);
+    ctx.lineTo(centerX - 14, centerY - radius - 8);
+    ctx.lineTo(centerX + 14, centerY - radius - 8);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.fillRect(centerX - 1.5, centerY - radius - 10, 3, 12);
+  }
+
+  function drawTargetChip(centerX, centerY) {
+    const ringPulse = Math.sin(game.ripple * 10) * 0.5 + 0.5;
+
+    ctx.fillStyle = "rgba(7, 12, 22, 0.74)";
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 52, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 52, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = colors[game.targetIndex];
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = `rgba(255,255,255,${0.18 + ringPulse * 0.18 + game.lockFlash * 0.22})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 38, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = "#f5f7fb";
+    ctx.font = '700 10px "SFMono-Regular", "Roboto Mono", monospace';
+    ctx.textAlign = "center";
+    ctx.fillText("TARGET", centerX, centerY - 44);
+    ctx.fillStyle = "rgba(255,255,255,0.78)";
+    ctx.fillText("MATCH TOP", centerX, centerY + 60);
   }
 
   function draw() {
@@ -4127,45 +4238,51 @@ function createOrbitMatch(root, api) {
     ctx.fillRect(0, 0, width, height);
 
     const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = 106;
+    const centerY = height / 2 + 8;
+    const radius = 108;
+    const innerRadius = 62;
 
-    colors.forEach((color, index) => {
-      const start = game.rotation + index * (Math.PI / 2);
-      const end = start + Math.PI / 2;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, start, end);
-      ctx.arc(centerX, centerY, 62, end, start, true);
-      ctx.closePath();
-      ctx.fillStyle = color;
-      ctx.fill();
-    });
-
-    ctx.fillStyle = colors[game.targetIndex];
+    ctx.fillStyle = "rgba(94, 225, 255, 0.08)";
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 42, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, radius + 34, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(centerX, centerY - 146);
-    ctx.lineTo(centerX - 12, centerY - 118);
-    ctx.lineTo(centerX + 12, centerY - 118);
-    ctx.closePath();
-    ctx.fill();
+    ctx.arc(centerX, centerY, radius + 22, 0, Math.PI * 2);
+    ctx.stroke();
+
+    drawLockZone(centerX, centerY, radius);
+    drawRing(centerX, centerY, radius, innerRadius);
+    drawTargetChip(centerX, centerY);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, innerRadius - 12, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(255,255,255,0.66)";
+    ctx.font = '700 11px "SFMono-Regular", "Roboto Mono", monospace';
+    ctx.textAlign = "left";
+    ctx.fillText(`Window ${Math.round((currentTolerance() / 0.44) * 100)}%`, 18, height - 18);
   }
 
   function start() {
     api.countPlay();
     api.sound("start");
     game.rotation = 0;
-    game.speed = 0.00125;
+    game.speed = 0.00102;
     game.targetIndex = randomInt(0, 3);
     game.score = 0;
+    game.lockFlash = 0;
+    game.ripple = 0;
+    game.cooldown = 0;
     game.running = true;
     game.lastTime = performance.now();
     api.setCurrent(0);
-    api.setHint("Tap when the top wedge matches.");
+    api.setHint("Tap when the target color reaches the top lock.");
     api.setPrimary("Restart", start);
     cancelAnimationFrame(game.raf);
     game.raf = requestAnimationFrame(loop);
@@ -4180,35 +4297,58 @@ function createOrbitMatch(root, api) {
   }
 
   function tap() {
-    if (!game.running) return;
-    if (alignmentError() > 0.38) {
-      stop("Missed.");
+    if (!game.running || game.cooldown > 0) return;
+
+    const error = alignmentError();
+    const tolerance = currentTolerance();
+    if (Math.abs(error) > tolerance) {
+      const timing = error < 0 ? "Too early." : "Too late.";
+      stop(timing);
       return;
     }
 
     game.score += 1;
+    game.lockFlash = 1;
+    game.ripple = 0.42;
+    game.cooldown = 0.12;
     api.sound("orbit");
-    game.speed += 0.00011;
-    game.targetIndex = randomInt(0, 3);
+    game.speed = Math.min(0.0021, game.speed + 0.00008);
+    chooseNextTarget();
     api.setCurrent(game.score);
     api.updateBest(game.score);
-    api.setHint(`${game.score} hits.`);
+    api.setHint(game.score === 1 ? "Clean hit." : `${game.score} hits. Keep the rhythm.`);
   }
 
   function loop(timestamp) {
-    draw();
-    if (!game.running) return;
     const delta = Math.min(32, timestamp - game.lastTime || 16);
     game.lastTime = timestamp;
-    game.rotation += delta * game.speed;
+    if (!game.running) {
+      draw();
+      return;
+    }
+
+    const seconds = delta / 1000;
+    game.rotation = (game.rotation + delta * game.speed) % (Math.PI * 2);
+    game.lockFlash = Math.max(0, game.lockFlash - seconds * 4.5);
+    game.ripple = Math.max(0, game.ripple - seconds * 1.2);
+    game.cooldown = Math.max(0, game.cooldown - seconds);
+    draw();
     game.raf = requestAnimationFrame(loop);
   }
 
-  canvas.addEventListener("click", tap);
+  canvas.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    tap();
+  });
   api.setPrimary("Start", start);
   draw();
 
   return {
+    onKey(event) {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      tap();
+    },
     destroy() {
       cancelAnimationFrame(game.raf);
     }
