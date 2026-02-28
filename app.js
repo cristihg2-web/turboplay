@@ -3173,33 +3173,39 @@ function createBrickPop(root, api) {
   api.setBestLabel("Best Score");
 
   const stage = document.createElement("div");
-  stage.className = "canvas-stage";
-  const { canvas, ctx, width, height } = makeCanvas(320, 420);
+  stage.className = "canvas-stage brick-pop-stage";
+  const availableStageWidth = Math.min(root.clientWidth || window.innerWidth - 32, window.innerWidth - 32, 420);
+  const playfieldWidth = clamp(Math.round(availableStageWidth), 300, 420);
+  const playfieldHeight = clamp(Math.round(playfieldWidth * 1.2), 400, 500);
+  const { canvas, ctx, width, height } = makeCanvas(playfieldWidth, playfieldHeight);
+  canvas.classList.add("brick-pop-canvas");
+  const nudgeAmount = Math.round(width * 0.08);
   const controls = buildTouchControls([
     [
-      { label: "Left", onPress: () => nudgePaddle(-26) },
-      { label: "Right", onPress: () => nudgePaddle(26), accent: true }
+      { label: "Left", onPress: () => nudgePaddle(-nudgeAmount) },
+      { label: "Right", onPress: () => nudgePaddle(nudgeAmount), accent: true }
     ]
   ]);
   const legend = document.createElement("div");
-  legend.className = "brick-legend";
+  legend.className = "brick-legend brick-legend--compact";
   legend.innerHTML = `
-    <div class="brick-legend-item"><span class="brick-item-icon" data-item="extra" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Extra</strong><span>+</span></div></div>
-    <div class="brick-legend-item"><span class="brick-item-icon" data-item="power" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Power</strong><span>Bolt</span></div></div>
-    <div class="brick-legend-item"><span class="brick-item-icon" data-item="wide" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Wide</strong><span>Arrow out</span></div></div>
-    <div class="brick-legend-item"><span class="brick-item-icon" data-item="narrow" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Narrow</strong><span>Arrow in</span></div></div>
-    <div class="brick-legend-item"><span class="brick-item-icon" data-item="slow" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Slow</strong><span>II bars</span></div></div>
-    <div class="brick-legend-item"><span class="brick-item-icon" data-item="magnet" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Magnet</strong><span>U clamp</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="extra" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Extra</strong><span>+ ball</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="power" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Power</strong><span>2 hits</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="wide" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Wide</strong><span>+15%</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="narrow" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Narrow</strong><span>-15%</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="slow" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Slow</strong><span>pace</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="magnet" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Magnet</strong><span>pull</span></div></div>
   `;
   stage.appendChild(canvas);
   stage.appendChild(legend);
   stage.appendChild(controls);
   root.appendChild(stage);
 
-  const paddleBaseWidth = 96;
-  const paddleY = height - 28;
-  const brickStartY = 14;
-  const brickRowStep = 24;
+  const paddleBaseWidth = clamp(Math.round(width * 0.3), 92, 118);
+  const paddleY = height - clamp(Math.round(height * 0.07), 28, 34);
+  const brickStartY = clamp(Math.round(height * 0.035), 14, 18);
+  const brickRowStep = clamp(Math.round(height * 0.055), 22, 28);
+  const brickColumns = 5;
   const dropTable = [
     { type: "extra", weight: 0.18 },
     { type: "power", weight: 0.2 },
@@ -3265,52 +3271,126 @@ function createBrickPop(root, api) {
     };
   }
 
+  function getBrickMetrics() {
+    const side = clamp(Math.round(width * 0.055), 14, 24);
+    const gap = clamp(Math.round(width * 0.022), 6, 10);
+    const brickWidth = Math.floor((width - side * 2 - gap * (brickColumns - 1)) / brickColumns);
+    const brickHeight = clamp(Math.round(height * 0.042), 17, 20);
+    return { side, gap, brickWidth, brickHeight };
+  }
+
+  function createBrick({
+    x,
+    y,
+    width: brickWidth,
+    height: brickHeight,
+    color,
+    kind = "standard",
+    hp = 1,
+    drop = undefined
+  }) {
+    return {
+      x,
+      y,
+      width: brickWidth,
+      height: brickHeight,
+      color,
+      alive: true,
+      kind,
+      hp,
+      maxHp: hp,
+      flash: 0,
+      drop
+    };
+  }
+
   function makeBricks() {
+    const { side, gap, brickWidth, brickHeight } = getBrickMetrics();
+    const colors = ["#ffbf47", "#ff6ca8", "#5ee1ff", "#76f0c2"];
+
     if (game.round % 10 === 0) {
       const bossHp = game.round + 10;
-      const bossWidth = 184;
-      const bossHeight = 34;
-      const boss = {
+      const bossWidth = brickWidth * 2 + gap - 8;
+      const bossHeight = brickHeight + 6;
+      const topY = brickStartY;
+      const middleY = brickStartY + brickRowStep;
+      const bottomY = brickStartY + brickRowStep * 2;
+      const bricks = [];
+
+      for (let column = 0; column < brickColumns; column += 1) {
+        bricks.push(
+          createBrick({
+            x: side + column * (brickWidth + gap),
+            y: topY,
+            width: brickWidth,
+            height: brickHeight,
+            color: colors[(column + game.round) % colors.length]
+          })
+        );
+      }
+
+      bricks.push(
+        createBrick({
+          x: side,
+          y: middleY,
+          width: brickWidth,
+          height: brickHeight,
+          color: colors[(game.round + 1) % colors.length]
+        }),
+        createBrick({
+          x: side + (brickWidth + gap) * 4,
+          y: middleY,
+          width: brickWidth,
+          height: brickHeight,
+          color: colors[(game.round + 2) % colors.length]
+        })
+      );
+
+      for (let column = 1; column <= 3; column += 1) {
+        bricks.push(
+          createBrick({
+            x: side + column * (brickWidth + gap),
+            y: bottomY,
+            width: brickWidth,
+            height: brickHeight,
+            color: colors[(column + game.round + 2) % colors.length]
+          })
+        );
+      }
+
+      const boss = createBrick({
         x: width / 2 - bossWidth / 2,
-        y: brickStartY + 18,
+        y: middleY - 4,
         width: bossWidth,
         height: bossHeight,
         color: "#ff6c88",
-        alive: true,
         kind: "boss",
         hp: bossHp,
-        maxHp: bossHp,
-        flash: 0
-      };
-      boss.drop = {
-        x: boss.x + boss.width / 2,
-        y: boss.y + boss.height / 2,
-        vy: 96 + game.round * 8,
-        type: weightedItemType(),
-        size: 20
-      };
-      return [boss];
+        drop: {
+          x: width / 2,
+          y: middleY + bossHeight / 2,
+          vy: 96 + game.round * 8,
+          type: "narrow",
+          size: 20
+        }
+      });
+      bricks.push(boss);
+      return bricks;
     }
 
     const bricks = [];
-    const colors = ["#ffbf47", "#ff6ca8", "#5ee1ff", "#76f0c2"];
     const rows = Math.min(7, 5 + Math.floor((game.round - 1) / 2));
     const pattern = patternLibrary[(game.round - 1) % patternLibrary.length];
     for (let row = 0; row < rows; row += 1) {
-      for (let column = 0; column < 5; column += 1) {
+      for (let column = 0; column < brickColumns; column += 1) {
         if (pattern[row][column] !== "1") continue;
-        const brick = {
-          x: 18 + column * 58,
+        const brick = createBrick({
+          x: side + column * (brickWidth + gap),
           y: brickStartY + row * brickRowStep,
-          width: 50,
-          height: 18,
+          width: brickWidth,
+          height: brickHeight,
           color: colors[(row + game.round - 1) % colors.length],
-          alive: true,
-          kind: "standard",
-          hp: 1,
-          maxHp: 1,
-          flash: 0
-        };
+        });
         bricks.push(brick);
       }
     }
@@ -3385,7 +3465,7 @@ function createBrickPop(root, api) {
     }
 
     if (game.round % 10 === 0) {
-      api.setHint(`${phaseLabel()}. Boss brick online.`);
+      api.setHint(`${phaseLabel()}. Break the shield, then the boss.`);
       return;
     }
 

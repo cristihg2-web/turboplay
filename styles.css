@@ -400,6 +400,12 @@ button {
   margin-top: 10px;
 }
 
+.brick-legend--compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
 .brick-legend-item {
   display: flex;
   align-items: center;
@@ -409,6 +415,13 @@ button {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.brick-legend--compact .brick-legend-item {
+  gap: 7px;
+  min-height: 34px;
+  padding: 6px 8px;
+  border-radius: 12px;
 }
 
 .brick-legend-copy {
@@ -429,12 +442,31 @@ button {
   font-size: 0.72rem;
 }
 
+.brick-legend--compact .brick-legend-copy {
+  gap: 1px;
+}
+
+.brick-legend--compact .brick-legend-copy strong {
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.brick-legend--compact .brick-legend-copy span {
+  font-size: 0.63rem;
+}
+
 .brick-item-icon {
   position: relative;
   flex: 0 0 26px;
   width: 26px;
   height: 26px;
   border-radius: 999px;
+}
+
+.brick-legend--compact .brick-item-icon {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
 }
 
 .brick-item-icon::before,
@@ -538,6 +570,24 @@ button {
   left: 17px;
   border-left: 0;
   border-radius: 0 10px 10px 0;
+}
+
+.brick-pop-stage {
+  max-width: 100%;
+}
+
+.brick-pop-stage .touch-controls {
+  margin-top: 8px;
+}
+
+.brick-pop-canvas {
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.22);
+}
+
+@media (max-width: 560px) {
+  .brick-legend--compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .touch-controls {
