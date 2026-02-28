@@ -3175,19 +3175,31 @@ function createBrickPop(root, api) {
   const stage = document.createElement("div");
   stage.className = "canvas-stage";
   const { canvas, ctx, width, height } = makeCanvas(320, 420);
+  const controls = buildTouchControls([
+    [
+      { label: "Left", onPress: () => nudgePaddle(-26) },
+      { label: "Right", onPress: () => nudgePaddle(26), accent: true }
+    ]
+  ]);
+  const legend = document.createElement("div");
+  legend.className = "brick-legend";
+  legend.innerHTML = `
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="extra" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Extra</strong><span>+</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="power" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Power</strong><span>Bolt</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="wide" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Wide</strong><span>Arrow out</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="narrow" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Narrow</strong><span>Arrow in</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="slow" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Slow</strong><span>II bars</span></div></div>
+    <div class="brick-legend-item"><span class="brick-item-icon" data-item="magnet" aria-hidden="true"></span><div class="brick-legend-copy"><strong>Magnet</strong><span>U clamp</span></div></div>
+  `;
   stage.appendChild(canvas);
-  stage.appendChild(
-    buildTouchControls([
-      [
-        { label: "Left", onPress: () => nudgePaddle(-26) },
-        { label: "Right", onPress: () => nudgePaddle(26), accent: true }
-      ]
-    ])
-  );
+  stage.appendChild(legend);
+  stage.appendChild(controls);
   root.appendChild(stage);
 
   const paddleBaseWidth = 96;
   const paddleY = height - 28;
+  const brickStartY = 14;
+  const brickRowStep = 24;
   const dropTable = [
     { type: "extra", weight: 0.18 },
     { type: "power", weight: 0.2 },
@@ -3223,6 +3235,10 @@ function createBrickPop(root, api) {
     lastTime: 0
   };
 
+  function phaseLabel(phase = game.round) {
+    return `Phase ${phase}`;
+  }
+
   function clampPaddle() {
     game.paddleX = clamp(game.paddleX, 10, width - game.paddleWidth - 10);
   }
@@ -3250,6 +3266,32 @@ function createBrickPop(root, api) {
   }
 
   function makeBricks() {
+    if (game.round % 10 === 0) {
+      const bossHp = game.round + 10;
+      const bossWidth = 184;
+      const bossHeight = 34;
+      const boss = {
+        x: width / 2 - bossWidth / 2,
+        y: brickStartY + 18,
+        width: bossWidth,
+        height: bossHeight,
+        color: "#ff6c88",
+        alive: true,
+        kind: "boss",
+        hp: bossHp,
+        maxHp: bossHp,
+        flash: 0
+      };
+      boss.drop = {
+        x: boss.x + boss.width / 2,
+        y: boss.y + boss.height / 2,
+        vy: 96 + game.round * 8,
+        type: weightedItemType(),
+        size: 20
+      };
+      return [boss];
+    }
+
     const bricks = [];
     const colors = ["#ffbf47", "#ff6ca8", "#5ee1ff", "#76f0c2"];
     const rows = Math.min(7, 5 + Math.floor((game.round - 1) / 2));
@@ -3259,16 +3301,43 @@ function createBrickPop(root, api) {
         if (pattern[row][column] !== "1") continue;
         const brick = {
           x: 18 + column * 58,
-          y: 22 + row * 30,
+          y: brickStartY + row * brickRowStep,
           width: 50,
           height: 18,
           color: colors[(row + game.round - 1) % colors.length],
-          alive: true
+          alive: true,
+          kind: "standard",
+          hp: 1,
+          maxHp: 1,
+          flash: 0
         };
-        brick.drop = maybeDropItem(brick);
         bricks.push(brick);
       }
     }
+
+    if (game.round >= 3 && bricks.length > 0) {
+      const hardCount = Math.min(
+        Math.max(1, 1 + Math.floor((game.round - 3) * 0.7)),
+        Math.max(1, Math.floor(bricks.length * 0.42))
+      );
+      const used = new Set();
+      let cursor = (game.round * 3) % bricks.length;
+      while (used.size < hardCount) {
+        const index = cursor % bricks.length;
+        if (!used.has(index)) {
+          const brick = bricks[index];
+          brick.kind = "hard";
+          brick.hp = 2;
+          brick.maxHp = 2;
+          used.add(index);
+        }
+        cursor += 2 + ((game.round + used.size) % 4);
+      }
+    }
+
+    bricks.forEach((brick) => {
+      brick.drop = maybeDropItem(brick);
+    });
     return bricks;
   }
 
@@ -3310,7 +3379,17 @@ function createBrickPop(root, api) {
     }
 
     api.sound(firstRound ? "start" : "round");
-    api.setHint(firstRound ? "Drag or tap the controls." : `Round ${game.round}. Bricks speed up.`);
+    if (firstRound) {
+      api.setHint(`${phaseLabel()}. Drag or tap the controls.`);
+      return;
+    }
+
+    if (game.round % 10 === 0) {
+      api.setHint(`${phaseLabel()}. Boss brick online.`);
+      return;
+    }
+
+    api.setHint(`${phaseLabel()}. Speed and armor increase.`);
   }
 
   function reset() {
@@ -3344,11 +3423,57 @@ function createBrickPop(root, api) {
   }
 
   function drawBrick(brick) {
-    ctx.fillStyle = "rgba(0,0,0,0.22)";
+    const flash = clamp((brick.flash || 0) / 0.14, 0, 1);
+    ctx.fillStyle = brick.kind === "boss" ? "rgba(0,0,0,0.32)" : "rgba(0,0,0,0.22)";
     ctx.fillRect(brick.x + 2, brick.y + 3, brick.width, brick.height);
+
+    if (brick.kind === "boss") {
+      ctx.fillStyle = "#59162d";
+      ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+      ctx.fillStyle = "#ff5e88";
+      ctx.fillRect(brick.x + 3, brick.y + 3, brick.width - 6, brick.height - 6);
+      ctx.fillStyle = `rgba(255, 236, 184, ${0.18 + flash * 0.24})`;
+      ctx.fillRect(brick.x + 8, brick.y + 5, brick.width - 16, 7);
+      ctx.fillStyle = "rgba(60, 6, 18, 0.35)";
+      ctx.fillRect(brick.x + 8, brick.y + brick.height - 12, brick.width - 16, 6);
+
+      const hpRatio = brick.maxHp > 0 ? brick.hp / brick.maxHp : 0;
+      ctx.fillStyle = "rgba(8, 10, 22, 0.6)";
+      ctx.fillRect(brick.x + 14, brick.y + brick.height - 10, brick.width - 28, 4);
+      ctx.fillStyle = "#ffd86c";
+      ctx.fillRect(brick.x + 14, brick.y + brick.height - 10, (brick.width - 28) * hpRatio, 4);
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.26 + flash * 0.3})`;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(brick.x + 1, brick.y + 1, brick.width - 2, brick.height - 2);
+      ctx.fillStyle = "#fff4d4";
+      ctx.font = '700 10px "SFMono-Regular", "Roboto Mono", monospace';
+      ctx.textAlign = "left";
+      ctx.fillText(`BOSS ${brick.hp}`, brick.x + 12, brick.y + 15);
+      return;
+    }
+
+    if (brick.kind === "hard") {
+      ctx.fillStyle = "#5f6877";
+      ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+      ctx.fillStyle = brick.hp === 2 ? "#8a94a6" : "#b0bacf";
+      ctx.fillRect(brick.x + 2, brick.y + 2, brick.width - 4, brick.height - 4);
+      ctx.fillStyle = `rgba(255,255,255,${0.18 + flash * 0.26})`;
+      ctx.fillRect(brick.x + 2, brick.y + 2, brick.width - 4, 4);
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(brick.x + 3.5, brick.y + 3.5, brick.width - 7, brick.height - 7);
+      ctx.fillStyle = "#101722";
+      ctx.fillRect(brick.x + 9, brick.y + 6, brick.width - 18, brick.height - 12);
+      ctx.fillStyle = "#ffe8b0";
+      ctx.font = '700 9px "SFMono-Regular", "Roboto Mono", monospace';
+      ctx.textAlign = "center";
+      ctx.fillText(`${brick.hp}`, brick.x + brick.width / 2, brick.y + brick.height - 5);
+      return;
+    }
+
     ctx.fillStyle = brick.color;
     ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
-    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    ctx.fillStyle = `rgba(255,255,255,${0.18 + flash * 0.26})`;
     ctx.fillRect(brick.x + 2, brick.y + 2, brick.width - 4, 4);
     ctx.fillStyle = "rgba(6, 12, 24, 0.16)";
     ctx.fillRect(brick.x + 2, brick.y + brick.height - 5, brick.width - 4, 3);
@@ -3463,19 +3588,19 @@ function createBrickPop(root, api) {
     ctx.fillStyle = "rgba(255,255,255,0.78)";
     ctx.font = '700 12px "SFMono-Regular", "Roboto Mono", monospace';
     ctx.textAlign = "left";
-    ctx.fillText(`R${game.round}`, 18, height - 12);
-    ctx.fillText(`${game.balls.length}B`, 62, height - 12);
+    ctx.fillText(`PH ${game.round}`, 18, height - 12);
+    ctx.fillText(`${game.balls.length}B`, 74, height - 12);
     if (game.powerHitsRemaining > 0) {
       ctx.fillStyle = "#ffd86c";
-      ctx.fillText(`P${game.powerHitsRemaining}`, 102, height - 12);
+      ctx.fillText(`P${game.powerHitsRemaining}`, 118, height - 12);
     }
     if (game.slowTime > 0) {
       ctx.fillStyle = "#aab0ff";
-      ctx.fillText("S", 142, height - 12);
+      ctx.fillText("S", 160, height - 12);
     }
     if (game.magnetTime > 0) {
       ctx.fillStyle = "#ffb18d";
-      ctx.fillText("M", 160, height - 12);
+      ctx.fillText("M", 178, height - 12);
     }
   }
 
@@ -3546,10 +3671,10 @@ function createBrickPop(root, api) {
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
       ctx.font = '800 26px "Avenir Next Condensed", "Franklin Gothic Medium", "Arial Narrow", sans-serif';
-      ctx.fillText(`Round ${game.round}`, width / 2, height / 2 - 4);
+      ctx.fillText(phaseLabel(), width / 2, height / 2 - 4);
       ctx.font = '700 12px "SFMono-Regular", "Roboto Mono", monospace';
       ctx.fillStyle = "#ffd86c";
-      ctx.fillText("incoming", width / 2, height / 2 + 20);
+      ctx.fillText(game.round % 10 === 0 ? "boss incoming" : "incoming", width / 2, height / 2 + 20);
     }
   }
 
@@ -3572,24 +3697,64 @@ function createBrickPop(root, api) {
     ball.vx = (ball.x - (game.paddleX + game.paddleWidth / 2)) * 4;
   }
 
-  function handleBrickHit(ball, brick) {
-    brick.alive = false;
-    if (brick.drop) {
-      game.items.push({ ...brick.drop });
-    }
-    spawnBurst(brick.x + brick.width / 2, brick.y + brick.height / 2, "rgba(255, 214, 132, ALPHA)");
+  function handleBrickHit(ball, brick, previousX, previousY) {
+    const poweredHit = game.powerHitsRemaining > 0;
+    const wasAlive = brick.alive;
+    if (!wasAlive) return;
 
-    api.sound("brick");
-    game.score += 10;
+    brick.flash = 0.14;
+    brick.hp -= 1;
+
+    const hitTint = brick.kind === "boss"
+      ? "rgba(255, 108, 148, ALPHA)"
+      : brick.kind === "hard"
+        ? "rgba(190, 204, 232, ALPHA)"
+        : "rgba(255, 214, 132, ALPHA)";
+    spawnBurst(brick.x + brick.width / 2, brick.y + brick.height / 2, hitTint);
+
+    if (brick.hp <= 0) {
+      brick.alive = false;
+      brick.flash = 0;
+      if (brick.drop) {
+        game.items.push({ ...brick.drop });
+      }
+      api.sound(brick.kind === "boss" ? "level" : "brick");
+      game.score += brick.kind === "boss" ? 70 + game.round * 2 : brick.kind === "hard" ? 18 : 10;
+    } else {
+      api.sound(brick.kind === "boss" ? "lock" : "deny");
+      game.score += brick.kind === "boss" ? 4 : 2;
+    }
+
     api.setCurrent(game.score);
     api.updateBest(game.score);
 
-    if (game.powerHitsRemaining > 0) {
+    const fromLeft = previousX + ball.radius <= brick.x;
+    const fromRight = previousX - ball.radius >= brick.x + brick.width;
+    const fromTop = previousY + ball.radius <= brick.y;
+    const fromBottom = previousY - ball.radius >= brick.y + brick.height;
+
+    if (poweredHit) {
       game.powerHitsRemaining -= 1;
+      if (Math.abs(ball.vx) > Math.abs(ball.vy)) {
+        ball.x = ball.vx > 0 ? brick.x + brick.width + ball.radius + 1 : brick.x - ball.radius - 1;
+      } else {
+        ball.y = ball.vy > 0 ? brick.y + brick.height + ball.radius + 1 : brick.y - ball.radius - 1;
+      }
+      return;
+    }
+
+    if ((fromLeft || fromRight) && !fromTop && !fromBottom) {
+      ball.vx *= -1;
+      ball.x = fromLeft ? brick.x - ball.radius - 1 : brick.x + brick.width + ball.radius + 1;
       return;
     }
 
     ball.vy *= -1;
+    if (fromTop) {
+      ball.y = brick.y - ball.radius - 1;
+    } else if (fromBottom) {
+      ball.y = brick.y + brick.height + ball.radius + 1;
+    }
   }
 
   function applyItem(item) {
@@ -3662,6 +3827,8 @@ function createBrickPop(root, api) {
         ball.vx += (game.paddleX + game.paddleWidth / 2 - ball.x) * 4.8 * seconds;
       }
 
+      const previousX = ball.x;
+      const previousY = ball.y;
       ball.x += (ball.vx * seconds);
       ball.y += (ball.vy * seconds);
 
@@ -3696,7 +3863,7 @@ function createBrickPop(root, api) {
           ball.y + ball.radius > brick.y &&
           ball.y - ball.radius < brick.y + brick.height
         ) {
-          handleBrickHit(ball, brick);
+          handleBrickHit(ball, brick, previousX, previousY);
           break;
         }
       }
@@ -3724,6 +3891,9 @@ function createBrickPop(root, api) {
     const hadSlow = game.slowTime > 0;
     game.slowTime = Math.max(0, game.slowTime - seconds);
     game.magnetTime = Math.max(0, game.magnetTime - seconds);
+    game.bricks.forEach((brick) => {
+      brick.flash = Math.max(0, (brick.flash || 0) - seconds);
+    });
     if (hadSlow && game.slowTime === 0) {
       retuneBallSpeeds();
     }
@@ -3744,12 +3914,13 @@ function createBrickPop(root, api) {
     if (game.bricks.every((brick) => !brick.alive)) {
       game.round += 1;
       game.roundDelay = 0.8;
-      api.setHint(`Round clear. Round ${game.round} incoming.`);
+      api.sound("level");
+      api.setHint(game.round % 10 === 0 ? `${phaseLabel(game.round - 1)} clear. ${phaseLabel()} boss incoming.` : `${phaseLabel(game.round - 1)} clear. ${phaseLabel()} incoming.`);
       return;
     }
 
     if (game.balls.length === 0) {
-      stop(`Ball lost on round ${game.round}.`);
+      stop(`Ball lost on ${phaseLabel().toLowerCase()}.`);
     }
   }
 

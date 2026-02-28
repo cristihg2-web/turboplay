@@ -393,6 +393,153 @@ button {
   gap: 10px;
 }
 
+.brick-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.brick-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.brick-legend-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.brick-legend-copy strong {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.brick-legend-copy span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.brick-item-icon {
+  position: relative;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+}
+
+.brick-item-icon::before,
+.brick-item-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.brick-item-icon[data-item="extra"] {
+  background: #76f0c2;
+}
+
+.brick-item-icon[data-item="extra"]::before {
+  width: 4px;
+  height: 14px;
+  background: #ffffff;
+  box-shadow: -5px 5px 0 999px transparent;
+}
+
+.brick-item-icon[data-item="extra"]::after {
+  width: 14px;
+  height: 4px;
+  background: #ffffff;
+}
+
+.brick-item-icon[data-item="power"] {
+  background: #ffbf47;
+}
+
+.brick-item-icon[data-item="power"]::before {
+  width: 12px;
+  height: 16px;
+  background: #fff0ad;
+  clip-path: polygon(35% 0%, 70% 0%, 48% 38%, 66% 38%, 30% 100%, 40% 58%, 20% 58%);
+}
+
+.brick-item-icon[data-item="wide"] {
+  background: #5ee1ff;
+}
+
+.brick-item-icon[data-item="wide"]::before {
+  width: 16px;
+  height: 10px;
+  background: #eaf9ff;
+  clip-path: polygon(0 50%, 36% 0, 36% 28%, 100% 28%, 100% 72%, 36% 72%, 36% 100%);
+}
+
+.brick-item-icon[data-item="narrow"] {
+  background: #ff6ca8;
+}
+
+.brick-item-icon[data-item="narrow"]::before {
+  width: 16px;
+  height: 10px;
+  background: #ffe5f0;
+  clip-path: polygon(100% 50%, 64% 0, 64% 28%, 0 28%, 0 72%, 64% 72%, 64% 100%);
+}
+
+.brick-item-icon[data-item="slow"] {
+  background: #8f93ff;
+}
+
+.brick-item-icon[data-item="slow"]::before {
+  width: 4px;
+  height: 14px;
+  background: #eef0ff;
+  box-shadow: 8px 0 0 #eef0ff;
+}
+
+.brick-item-icon[data-item="slow"]::after {
+  width: 16px;
+  height: 2px;
+  background: #eef0ff;
+  box-shadow: 0 -6px 0 #eef0ff, 0 6px 0 #eef0ff;
+}
+
+.brick-item-icon[data-item="magnet"] {
+  background: #ff8f63;
+}
+
+.brick-item-icon[data-item="magnet"]::before,
+.brick-item-icon[data-item="magnet"]::after {
+  width: 8px;
+  height: 12px;
+  border: 3px solid #fff0de;
+  border-top-width: 3px;
+  border-bottom-width: 3px;
+  background: transparent;
+}
+
+.brick-item-icon[data-item="magnet"]::before {
+  left: 9px;
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+}
+
+.brick-item-icon[data-item="magnet"]::after {
+  left: 17px;
+  border-left: 0;
+  border-radius: 0 10px 10px 0;
+}
+
 .touch-controls {
   display: grid;
   gap: 10px;
