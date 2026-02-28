@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Turboplay</title>
+  <desc id="desc">Icono de avion y mando arcade.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#143a66" />
+      <stop offset="100%" stop-color="#1a97a8" />
+    </linearGradient>
+    <linearGradient id="sun" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f1a340" />
+      <stop offset="100%" stop-color="#e46c5d" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="118" fill="url(#sky)" />
+  <circle cx="392" cy="128" r="56" fill="url(#sun)" />
+  <path
+    d="M114 336c0-55 45-100 100-100h84c55 0 100 45 100 100v24c0 22-18 40-40 40h-24l-18 48h-34l-12-46h-28l-12 46h-34l-18-48h-24c-22 0-40-18-40-40v-24Z"
+    fill="#f4fbff"
+  />
+  <rect x="154" y="286" width="64" height="64" rx="20" fill="#143a66" />
+  <rect x="294" y="286" width="64" height="64" rx="20" fill="#143a66" />
+  <circle cx="256" cy="338" r="22" fill="url(#sun)" />
+  <path
+    d="M250 84 124 192c-14 12-8 35 10 39l92 18 72 108c7 10 22 10 29 0l19-29 36 30c6 5 16 4 21-3l14-18c5-6 4-16-3-21l-36-30 19-29c7-10-1-24-13-26l-126-20 9-46 92 18c17 3 31-13 24-29L272 88c-4-14-14-17-22-4Z"
+    fill="#d8f2ff"
+  />
+</svg>

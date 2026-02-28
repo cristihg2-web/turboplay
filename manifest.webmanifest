@@ -1,0 +1,17 @@
+{
+  "name": "Turboplay",
+  "short_name": "Turboplay",
+  "description": "Arcade offline con minijuegos cortos para cualquier dispositivo.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#edf6fb",
+  "theme_color": "#143a66",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
