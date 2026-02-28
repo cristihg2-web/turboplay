@@ -66,6 +66,14 @@ const GAME_DEFS = [
     bestLabel: "Best Chain"
   },
   {
+    id: "dice",
+    name: "Poker Dice",
+    kicker: "Classic",
+    blurb: "Roll, hold, and bank the best hand.",
+    currentLabel: "Score",
+    bestLabel: "Best Run"
+  },
+  {
     id: "brick",
     name: "Brick Pop",
     kicker: "Arcade",
@@ -110,6 +118,7 @@ const els = {
   secondaryAction: document.querySelector("[data-secondary-action]"),
   audioToggle: document.querySelector("[data-audio-toggle]"),
   installButton: document.querySelector("[data-install]"),
+  gameCount: document.querySelector("[data-game-count]"),
   offlineStatus: document.querySelector("[data-offline-status]"),
   installStatus: document.querySelector("[data-install-status]")
 };
@@ -431,6 +440,9 @@ function renderRail() {
     button.addEventListener("click", () => switchGame(game.id));
     els.rail.appendChild(button);
   });
+  if (els.gameCount) {
+    els.gameCount.textContent = `${GAME_DEFS.length} games`;
+  }
   syncRailControls();
 }
 
@@ -777,6 +789,7 @@ const GAME_CREATORS = {
   lane: createLaneSplit,
   stacker: createGridStacker,
   lock: createLockPick,
+  dice: createPokerDice,
   brick: createBrickPop,
   orbit: createOrbitMatch
 };
@@ -3305,6 +3318,292 @@ function createLockPick(root, api) {
   return {
     destroy() {
       cancelAnimationFrame(game.raf);
+    }
+  };
+}
+
+function createPokerDice(root, api) {
+  api.setCurrentLabel("Score");
+  api.setBestLabel("Best Run");
+
+  const TOTAL_ROUNDS = 8;
+  const HOLD_BONUS = 2;
+  const PIP_MAP = {
+    1: [4],
+    2: [0, 8],
+    3: [0, 4, 8],
+    4: [0, 2, 6, 8],
+    5: [0, 2, 4, 6, 8],
+    6: [0, 2, 3, 5, 6, 8]
+  };
+  const PAYTABLE = [
+    { name: "Five Kind", score: 50 },
+    { name: "Straight", score: 40 },
+    { name: "Four Kind", score: 32 },
+    { name: "Full House", score: 28 },
+    { name: "Three Kind", score: 18 },
+    { name: "Two Pair", score: 14 },
+    { name: "Pair", score: 8 },
+    { name: "High Dice", score: "sum" }
+  ];
+
+  const stage = document.createElement("div");
+  stage.className = "dom-stage dice-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Round <strong data-dice-round>1 / ${TOTAL_ROUNDS}</strong></div>
+      <div class="score-pill">Rolls <strong data-dice-rolls>2</strong></div>
+      <div class="score-pill">Preview <strong data-dice-preview>0</strong></div>
+    </div>
+    <div class="dice-grid" data-dice-grid></div>
+    <div class="dice-hand-panel">
+      <div class="dice-hand-copy">
+        <strong data-dice-hand>High Dice</strong>
+        <span data-dice-bonus>Hold bonus +0</span>
+      </div>
+      <p data-dice-note>Tap dice to hold. Bank early for bonus points.</p>
+    </div>
+    <div class="dice-paytable">
+      ${PAYTABLE.map((entry) => `<div class="dice-paytable-row"><span>${entry.name}</span><strong>${entry.score}</strong></div>`).join("")}
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const roundValue = stage.querySelector("[data-dice-round]");
+  const rollsValue = stage.querySelector("[data-dice-rolls]");
+  const previewValue = stage.querySelector("[data-dice-preview]");
+  const handValue = stage.querySelector("[data-dice-hand]");
+  const bonusValue = stage.querySelector("[data-dice-bonus]");
+  const noteValue = stage.querySelector("[data-dice-note]");
+  const diceGrid = stage.querySelector("[data-dice-grid]");
+
+  const diceButtons = Array.from({ length: 5 }, (_, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "dice-tile";
+    button.dataset.index = String(index);
+    button.innerHTML = `
+      <span class="dice-hold-tag">Hold</span>
+      <span class="die-face" aria-hidden="true">
+        ${Array.from({ length: 9 }, () => '<span class="die-spot"></span>').join("")}
+      </span>
+      <span class="dice-value"></span>
+    `;
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      toggleHold(index);
+    });
+    diceGrid.appendChild(button);
+    return button;
+  });
+
+  const game = {
+    running: false,
+    round: 1,
+    score: 0,
+    rollsLeft: 0,
+    dice: [1, 1, 1, 1, 1],
+    holds: [false, false, false, false, false],
+    raf: 0
+  };
+
+  function rollOne() {
+    return randomInt(1, 6);
+  }
+
+  function handFromDice(dice, rollsLeft) {
+    const countsMap = new Map();
+    dice.forEach((value) => {
+      countsMap.set(value, (countsMap.get(value) || 0) + 1);
+    });
+    const counts = Array.from(countsMap.values()).sort((a, b) => b - a);
+    const unique = Array.from(countsMap.keys()).sort((a, b) => a - b);
+    const straight = unique.length === 5 && unique[4] - unique[0] === 4;
+    const total = dice.reduce((sum, value) => sum + value, 0);
+    let name = "High Dice";
+    let base = total;
+
+    if (counts[0] === 5) {
+      name = "Five Kind";
+      base = 50;
+    } else if (straight) {
+      name = "Straight";
+      base = 40;
+    } else if (counts[0] === 4) {
+      name = "Four Kind";
+      base = 32;
+    } else if (counts[0] === 3 && counts[1] === 2) {
+      name = "Full House";
+      base = 28;
+    } else if (counts[0] === 3) {
+      name = "Three Kind";
+      base = 18;
+    } else if (counts[0] === 2 && counts[1] === 2) {
+      name = "Two Pair";
+      base = 14;
+    } else if (counts[0] === 2) {
+      name = "Pair";
+      base = 8;
+    }
+
+    const bonus = rollsLeft * HOLD_BONUS;
+    return {
+      name,
+      base,
+      bonus,
+      total: base + bonus
+    };
+  }
+
+  function updatePreview() {
+    const preview = handFromDice(game.dice, game.rollsLeft);
+    roundValue.textContent = `${game.round} / ${TOTAL_ROUNDS}`;
+    rollsValue.textContent = String(game.rollsLeft);
+    previewValue.textContent = String(preview.total);
+    handValue.textContent = preview.name;
+    bonusValue.textContent = preview.bonus > 0 ? `Hold bonus +${preview.bonus}` : "Hold bonus +0";
+    noteValue.textContent = game.rollsLeft > 0 ? "Tap dice to hold. Roll again or bank now." : "No rolls left. Bank this hand.";
+    return preview;
+  }
+
+  function syncDice() {
+    diceButtons.forEach((button, index) => {
+      const value = game.dice[index];
+      const held = game.holds[index];
+      button.classList.toggle("is-held", held);
+      button.setAttribute("aria-pressed", held ? "true" : "false");
+      button.setAttribute("aria-label", `Die ${index + 1}, ${value}${held ? ", held" : ""}`);
+      button.querySelector(".dice-value").textContent = String(value);
+
+      const spots = button.querySelectorAll(".die-spot");
+      const active = new Set(PIP_MAP[value]);
+      spots.forEach((spot, spotIndex) => {
+        spot.classList.toggle("is-on", active.has(spotIndex));
+      });
+    });
+  }
+
+  function syncActions() {
+    if (!game.running) {
+      api.setPrimary("Start", start);
+      api.setSecondary("", null);
+      return;
+    }
+
+    if (game.rollsLeft > 0) {
+      api.setPrimary(`Roll ${game.rollsLeft}`, () => rollDice(true));
+      api.setSecondary("Bank", bankRound);
+      return;
+    }
+
+    api.setPrimary("Bank", bankRound);
+    api.setSecondary("", null);
+  }
+
+  function startRound(isFreshRun = false) {
+    game.holds = game.holds.map(() => false);
+    game.rollsLeft = 3;
+    rollDice(false);
+    if (!isFreshRun) {
+      api.sound("round");
+    }
+    api.setHint(`Round ${game.round}. Build the best hand.`);
+  }
+
+  function start() {
+    api.countPlay();
+    api.sound("start");
+    game.running = true;
+    game.round = 1;
+    game.score = 0;
+    game.dice = [1, 1, 1, 1, 1];
+    game.holds = [false, false, false, false, false];
+    api.setCurrent(0);
+    startRound(true);
+    syncActions();
+  }
+
+  function stop(message) {
+    game.running = false;
+    api.updateBest(game.score);
+    api.setHint(message);
+    syncActions();
+  }
+
+  function rollDice(playSound = true) {
+    if (!game.running || game.rollsLeft <= 0) return;
+    game.dice = game.dice.map((value, index) => (game.holds[index] ? value : rollOne()));
+    game.rollsLeft -= 1;
+    syncDice();
+    const preview = updatePreview();
+    syncActions();
+    if (playSound) {
+      api.sound("launch");
+    }
+    if (game.rollsLeft === 0) {
+      api.setHint(`${preview.name} ready. Bank this hand.`);
+    }
+  }
+
+  function toggleHold(index) {
+    if (!game.running || game.rollsLeft === 3 || game.rollsLeft === 0) return;
+    game.holds[index] = !game.holds[index];
+    syncDice();
+    updatePreview();
+    api.sound(game.holds[index] ? "collect" : "slide");
+  }
+
+  function bankRound() {
+    if (!game.running) return;
+    const preview = handFromDice(game.dice, game.rollsLeft);
+    game.score += preview.total;
+    api.setCurrent(game.score);
+
+    if (game.round === TOTAL_ROUNDS) {
+      api.sound("level");
+      stop(`Run complete. ${preview.name} for ${preview.total}.`);
+      return;
+    }
+
+    game.round += 1;
+    startRound(false);
+    syncActions();
+    api.setHint(`${preview.name} banked for ${preview.total}. Round ${game.round}.`);
+  }
+
+  syncDice();
+  updatePreview();
+  syncActions();
+
+  return {
+    destroy() {
+      cancelAnimationFrame(game.raf);
+    },
+    onKey(event) {
+      if (event.key >= "1" && event.key <= "5") {
+        event.preventDefault();
+        toggleHold(Number(event.key) - 1);
+      }
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        if (!game.running) {
+          start();
+          return;
+        }
+        if (game.rollsLeft > 0) {
+          rollDice(true);
+          return;
+        }
+        bankRound();
+      }
+      if (event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        bankRound();
+      }
+      if (event.key.toLowerCase() === "r") {
+        event.preventDefault();
+        rollDice(true);
+      }
     }
   };
 }

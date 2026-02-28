@@ -768,6 +768,188 @@ button {
 .merge-cell[data-value="1024"] { background: #7568ff; color: #fff; }
 .merge-cell[data-value="2048"] { background: linear-gradient(145deg, #ffd86c, #ffbf47); }
 
+.dice-stage {
+  display: grid;
+  gap: 12px;
+}
+
+.dice-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dice-tile {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+  padding: 10px 8px 8px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(10, 16, 28, 0.96);
+  color: var(--text);
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+
+.dice-tile:hover {
+  transform: translateY(-2px);
+}
+
+.dice-tile.is-held {
+  border-color: rgba(255, 191, 71, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 191, 71, 0.18), rgba(255, 255, 255, 0.03)),
+    rgba(10, 16, 28, 0.98);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 191, 71, 0.16),
+    0 14px 22px rgba(255, 191, 71, 0.1);
+}
+
+.dice-hold-tag {
+  display: inline-flex;
+  justify-self: center;
+  min-height: 20px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.42);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dice-tile.is-held .dice-hold-tag {
+  border-color: rgba(255, 191, 71, 0.24);
+  color: #ffe3a2;
+  background: rgba(255, 191, 71, 0.08);
+}
+
+.die-face {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  aspect-ratio: 1;
+  padding: 12px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f9fbff, #dce5f5);
+  box-shadow:
+    inset 0 -10px 16px rgba(15, 23, 48, 0.12),
+    0 10px 18px rgba(0, 0, 0, 0.16);
+}
+
+.die-spot {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: rgba(15, 23, 48, 0.08);
+  transform: scale(0.48);
+}
+
+.die-spot.is-on {
+  background: #12203a;
+  box-shadow: 0 0 0 1px rgba(15, 23, 48, 0.04);
+}
+
+.dice-tile.is-held .die-face {
+  background: linear-gradient(180deg, #fff7dc, #f2d47a);
+}
+
+.dice-value {
+  justify-self: center;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.dice-hand-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(20, 31, 52, 0.92), rgba(10, 16, 28, 0.98));
+}
+
+.dice-hand-copy {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dice-hand-copy strong {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dice-hand-copy span {
+  color: #ffe3a2;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dice-hand-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.dice-paytable {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dice-paytable-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dice-paytable-row span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dice-paytable-row strong {
+  color: var(--amber);
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .pixel-pads {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1255,6 +1437,19 @@ button {
     padding: 10px;
     border: 1px solid var(--line);
     box-shadow: var(--shadow);
+  }
+
+  .dice-grid {
+    gap: 8px;
+  }
+
+  .dice-hand-copy {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dice-paytable {
+    grid-template-columns: 1fr;
   }
 
   .target-stage,
