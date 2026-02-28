@@ -1,19 +1,19 @@
 # Turboplay
 
-Arcade offline con minijuegos cortos para movil, tablet y portatil.
+Offline arcade with short games for mobile, tablet, and laptop.
 
-## Incluye
+## Includes
 
-- `Cabina 2048`
-- `Luces de pasillo`
+- `Cabin 2048`
+- `Aisle Lights`
 - `Radar 30s`
-- cache offline con `service worker`
-- instalacion tipo PWA
+- offline caching with a `service worker`
+- PWA-style installation
 
-## Desarrollo local
+## Local development
 
 ```bash
 python3 -m http.server 4173
 ```
 
-Luego abre `http://localhost:4173`.
+Then open `http://localhost:4173`.

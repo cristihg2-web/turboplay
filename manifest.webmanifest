@@ -1,7 +1,7 @@
 {
   "name": "Turboplay",
   "short_name": "Turboplay",
-  "description": "Arcade offline con minijuegos cortos para cualquier dispositivo.",
+  "description": "Offline arcade with short games for any device.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#edf6fb",

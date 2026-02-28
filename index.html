@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Turboplay</title>
     <meta
       name="description"
-      content="Turboplay es una web de minijuegos offline para jugar desde cualquier dispositivo."
+      content="Turboplay is an offline arcade of short games for any device."
     />
     <meta name="theme-color" content="#143a66" />
     <link rel="manifest" href="./manifest.webmanifest" />
@@ -17,24 +17,24 @@
     <main class="page">
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Arcade offline de bolsillo</p>
+          <p class="eyebrow">Pocket offline arcade</p>
           <h1>Turboplay</h1>
           <p class="hero-text">
-            Minijuegos cortos para movil, tablet o portatil. Carga una vez, juega sin red y guarda
-            tus records en el dispositivo.
+            Short games for mobile, tablet, or laptop. Load once, play without a connection, and
+            keep your records on the device.
           </p>
           <div class="hero-actions">
             <button class="button button-primary" type="button" data-jump="games">
-              Jugar ahora
+              Play now
             </button>
             <button class="button button-secondary" type="button" data-install>
-              Instalar
+              Install
             </button>
           </div>
           <div class="hero-tags">
             <span>Offline</span>
-            <span>Partidas de 30s a 4 min</span>
-            <span>Sin login</span>
+            <span>30s to 4m sessions</span>
+            <span>No login</span>
           </div>
         </div>
 
@@ -42,69 +42,69 @@
           <p class="passport-label">Boarding pass</p>
           <h2>Flight mode arcade</h2>
           <p class="passport-copy">
-            Empezamos con tres juegos distintos para validar el concepto: puzzle, memoria y
-            reaccion.
+            The first pack uses three different loops to validate the idea: puzzle, memory, and
+            reaction.
           </p>
           <dl class="passport-grid">
             <div>
-              <dt>Mejor uso</dt>
-              <dd>Esperas, trayectos y ratos muertos</dd>
+              <dt>Best use</dt>
+              <dd>Queues, travel time, and dead moments</dd>
             </div>
             <div>
-              <dt>Sesion ideal</dt>
-              <dd>De 1 a 5 minutos</dd>
+              <dt>Ideal session</dt>
+              <dd>1 to 5 minutes</dd>
             </div>
             <div>
-              <dt>Siguiente pack</dt>
-              <dd>Trivia, sudoku y pass and play</dd>
+              <dt>Next pack</dt>
+              <dd>Trivia, sudoku, and pass-and-play</dd>
             </div>
           </dl>
           <p class="status" data-cache-status>
-            Preparando cache local para que funcione sin internet tras la primera carga.
+            Preparing local cache so it works offline after the first load.
           </p>
           <p class="status" data-install-status></p>
         </aside>
       </section>
 
-      <section class="stats" aria-label="Resumen de records">
+      <section class="stats" aria-label="Records summary">
         <article class="stat-card">
-          <p class="stat-label">Sesiones</p>
+          <p class="stat-label">Sessions</p>
           <p class="stat-value" data-stat="sessions">0</p>
-          <p class="stat-note">Cada partida suma una sesion nueva.</p>
+          <p class="stat-note">Each run adds one more session.</p>
         </article>
         <article class="stat-card">
-          <p class="stat-label">Cabina maxima</p>
+          <p class="stat-label">Top cabin</p>
           <p class="stat-value" data-stat="merge">0</p>
-          <p class="stat-note">Tu mejor ficha en el puzzle.</p>
+          <p class="stat-note">Your highest tile in the puzzle.</p>
         </article>
         <article class="stat-card">
-          <p class="stat-label">Secuencia maxima</p>
+          <p class="stat-label">Longest streak</p>
           <p class="stat-value" data-stat="memory">0</p>
-          <p class="stat-note">Lo maximo que has recordado.</p>
+          <p class="stat-note">Your best memory sequence.</p>
         </article>
         <article class="stat-card">
-          <p class="stat-label">Radar record</p>
+          <p class="stat-label">Radar high score</p>
           <p class="stat-value" data-stat="radar">0</p>
-          <p class="stat-note">Ecos atrapados en 30 segundos.</p>
+          <p class="stat-note">Targets caught in 30 seconds.</p>
         </article>
       </section>
 
       <section class="games" id="games">
         <div class="section-head">
-          <p class="eyebrow">Primer pack</p>
-          <h2>Tres minijuegos, tres ritmos.</h2>
+          <p class="eyebrow">First pack</p>
+          <h2>Three minigames, three rhythms.</h2>
           <p class="section-copy">
-            Turboplay no depende de un solo tipo de jugador. Puedes pensar, memorizar o soltar
-            energia segun el momento.
+            Turboplay is not built for one type of player. You can think, memorize, or burn energy
+            depending on the moment.
           </p>
         </div>
 
-        <div class="tabs" role="tablist" aria-label="Seleccion de juego">
+        <div class="tabs" role="tablist" aria-label="Game selection">
           <button class="tab is-active" type="button" role="tab" data-tab="merge">
-            Cabina 2048
+            Cabin 2048
           </button>
           <button class="tab" type="button" role="tab" data-tab="memory">
-            Luces de pasillo
+            Aisle Lights
           </button>
           <button class="tab" type="button" role="tab" data-tab="radar">
             Radar 30s
@@ -114,29 +114,29 @@
         <section class="panel is-active" data-panel="merge">
           <div class="panel-copy">
             <p class="eyebrow">Puzzle</p>
-            <h3>Cabina 2048</h3>
+            <h3>Cabin 2048</h3>
             <p>
-              Desliza fichas iguales para subir de categoria. Funciona bien con teclado y con
-              swipe.
+              Slide matching tiles to level up your cabin. It works well with both keyboard and
+              swipe controls.
             </p>
             <div class="chips">
-              <span>Swipe o flechas</span>
-              <span>Silencioso</span>
-              <span>Retomable</span>
+              <span>Swipe or arrows</span>
+              <span>Silent</span>
+              <span>Resume anytime</span>
             </div>
             <p class="game-status" data-merge-message>
-              Combina fichas iguales para mejorar la cabina.
+              Merge matching tiles to upgrade the cabin.
             </p>
             <button class="button button-secondary" type="button" data-merge-reset>
-              Nueva partida
+              New run
             </button>
           </div>
 
           <div class="panel-play">
             <div class="score-row">
-              <div class="score-pill">Puntos <strong data-merge-score>0</strong></div>
-              <div class="score-pill">Mejor ficha <strong data-merge-tile>0</strong></div>
-              <div class="score-pill">Record <strong data-merge-best>0</strong></div>
+              <div class="score-pill">Score <strong data-merge-score>0</strong></div>
+              <div class="score-pill">Top tile <strong data-merge-tile>0</strong></div>
+              <div class="score-pill">Best <strong data-merge-best>0</strong></div>
             </div>
             <div class="merge-board" data-merge-board>
               <div class="merge-cell" data-cell></div>
@@ -161,29 +161,29 @@
 
         <section class="panel" data-panel="memory">
           <div class="panel-copy">
-            <p class="eyebrow">Memoria</p>
-            <h3>Luces de pasillo</h3>
+            <p class="eyebrow">Memory</p>
+            <h3>Aisle Lights</h3>
             <p>
-              Mira la secuencia, repitela y alarga la ruta. Esta pensado para una mano y partidas
-              cortas.
+              Watch the sequence, repeat it, and stretch the route. It is built for one-hand play
+              and short sessions.
             </p>
             <div class="chips">
-              <span>Aprendizaje inmediato</span>
-              <span>Muy tactil</span>
-              <span>Escalable</span>
+              <span>Instant learning curve</span>
+              <span>Highly tactile</span>
+              <span>Scales well</span>
             </div>
             <p class="game-status" data-memory-message>
-              Pulsa empezar para ver la primera secuencia.
+              Press start to see the first sequence.
             </p>
             <button class="button button-secondary" type="button" data-memory-start>
-              Empezar
+              Start
             </button>
           </div>
 
           <div class="panel-play">
             <div class="score-row">
-              <div class="score-pill">Ronda <strong data-memory-round>0</strong></div>
-              <div class="score-pill">Record <strong data-memory-best>0</strong></div>
+              <div class="score-pill">Round <strong data-memory-round>0</strong></div>
+              <div class="score-pill">Best <strong data-memory-best>0</strong></div>
             </div>
             <div class="memory-grid">
               <button class="memory-pad pad-coral" type="button" data-pad="0" aria-label="Coral"></button>
@@ -196,38 +196,38 @@
 
         <section class="panel" data-panel="radar">
           <div class="panel-copy">
-            <p class="eyebrow">Reaccion</p>
+            <p class="eyebrow">Reaction</p>
             <h3>Radar 30s</h3>
             <p>
-              Toca el eco antes de que cambie de sector. Bueno para sesiones de medio minuto y
-              pass and play.
+              Tap the target before it jumps to another sector. Good for thirty-second bursts and
+              pass-and-play.
             </p>
             <div class="chips">
-              <span>30 segundos</span>
-              <span>Muy rejugable</span>
-              <span>Ideal para movil</span>
+              <span>30 seconds</span>
+              <span>Highly replayable</span>
+              <span>Ideal for mobile</span>
             </div>
             <p class="game-status" data-radar-message>
-              Inicia la ronda y atrapa tantos ecos como puedas.
+              Start the round and catch as many targets as you can.
             </p>
             <button class="button button-secondary" type="button" data-radar-start>
-              Iniciar ronda
+              Start round
             </button>
           </div>
 
           <div class="panel-play">
             <div class="score-row">
-              <div class="score-pill">Tiempo <strong data-radar-time>30</strong></div>
-              <div class="score-pill">Puntos <strong data-radar-score>0</strong></div>
-              <div class="score-pill">Record <strong data-radar-best>0</strong></div>
+              <div class="score-pill">Time <strong data-radar-time>30</strong></div>
+              <div class="score-pill">Score <strong data-radar-score>0</strong></div>
+              <div class="score-pill">Best <strong data-radar-best>0</strong></div>
             </div>
             <div class="radar-board" data-radar-board>
               <div class="radar-sweep"></div>
               <div class="radar-ring radar-ring-large"></div>
               <div class="radar-ring radar-ring-medium"></div>
               <div class="radar-ring radar-ring-small"></div>
-              <button class="radar-target" type="button" data-radar-target aria-label="Eco"></button>
-              <span class="radar-hint">Toca el eco</span>
+              <button class="radar-target" type="button" data-radar-target aria-label="Target"></button>
+              <span class="radar-hint">Tap the target</span>
             </div>
           </div>
         </section>

@@ -21,7 +21,7 @@ const state = {
     playerIndex: 0,
     flashing: null,
     locked: false,
-    message: "Pulsa empezar para ver la primera secuencia.",
+    message: "Press start to see the first sequence.",
     timers: []
   },
   radar: {
@@ -31,7 +31,7 @@ const state = {
     x: 44,
     y: 44,
     size: 62,
-    message: "Inicia la ronda y atrapa tantos ecos como puedas.",
+    message: "Start the round and catch as many targets as you can.",
     tickTimer: null,
     moveTimer: null
   },
@@ -143,7 +143,7 @@ function createMergeGame() {
     score: 0,
     over: false,
     won: false,
-    message: "Combina fichas iguales para mejorar la cabina."
+    message: "Merge matching tiles to upgrade the cabin."
   };
 }
 
@@ -242,7 +242,7 @@ function moveMerge(direction) {
   if (state.merge.over) return;
   const result = moveGrid(state.merge.grid, direction);
   if (!result.moved) {
-    state.merge.message = "Ese movimiento no cambia la cabina.";
+    state.merge.message = "That move does not change the cabin.";
     renderMerge();
     return;
   }
@@ -254,16 +254,16 @@ function moveMerge(direction) {
   const tile = highestTile(state.merge.grid);
   if (tile >= 2048 && !state.merge.won) {
     state.merge.won = true;
-    state.merge.message = "Cabina ejecutiva desbloqueada.";
+    state.merge.message = "Executive cabin unlocked.";
   } else if (result.scoreGain > 0) {
-    state.merge.message = `Has ganado ${result.scoreGain} puntos.`;
+    state.merge.message = `You gained ${result.scoreGain} points.`;
   } else {
-    state.merge.message = "Cabina reorganizada.";
+    state.merge.message = "Cabin reshuffled.";
   }
 
   if (!hasMove(state.merge.grid)) {
     state.merge.over = true;
-    state.merge.message = "Sin movimientos. Reinicia para volver a despegar.";
+    state.merge.message = "No moves left. Restart to fly again.";
   }
 
   syncMergeStats();
@@ -306,7 +306,7 @@ function playSequence() {
     if (step >= state.memory.sequence.length) {
       state.memory.locked = false;
       state.memory.flashing = null;
-      state.memory.message = "Tu turno.";
+      state.memory.message = "Your turn.";
       renderMemory();
       return;
     }
@@ -333,7 +333,7 @@ function nextRound() {
   state.memory.sequence.push(Math.floor(Math.random() * 4));
   state.memory.round = state.memory.sequence.length;
   state.memory.playerIndex = 0;
-  state.memory.message = `Ronda ${state.memory.round}. Memoriza la ruta.`;
+  state.memory.message = `Round ${state.memory.round}. Memorize the route.`;
   playSequence();
 }
 
@@ -345,7 +345,7 @@ function startMemory() {
   state.memory.playerIndex = 0;
   state.memory.locked = true;
   state.memory.flashing = null;
-  state.memory.message = "Preparando la primera secuencia...";
+  state.memory.message = "Preparing the first sequence...";
   renderMemory();
   nextRound();
 }
@@ -365,7 +365,7 @@ function handlePadPress(index) {
   if (index !== expected) {
     updateMemoryBest(Math.max(0, state.memory.round - 1));
     state.memory.locked = true;
-    state.memory.message = `Fallaste en la ronda ${state.memory.round}.`;
+    state.memory.message = `You missed round ${state.memory.round}.`;
     renderMemory();
     return;
   }
@@ -375,13 +375,13 @@ function handlePadPress(index) {
   if (state.memory.playerIndex === state.memory.sequence.length) {
     updateMemoryBest(state.memory.round);
     state.memory.locked = true;
-    state.memory.message = "Perfecto. Vamos con una ruta mas larga.";
+    state.memory.message = "Perfect. The next route gets longer.";
     renderMemory();
     const nextTimer = window.setTimeout(nextRound, 760);
     state.memory.timers.push(nextTimer);
   } else {
     const pending = state.memory.sequence.length - state.memory.playerIndex;
-    state.memory.message = `Bien. Quedan ${pending} toque${pending === 1 ? "" : "s"}.`;
+    state.memory.message = `Good. ${pending} tap${pending === 1 ? "" : "s"} left.`;
     renderMemory();
   }
 }
@@ -423,7 +423,7 @@ function endRadar() {
     saveObject(STORAGE_KEYS.stats, stats);
     renderStats();
   }
-  state.radar.message = `Tiempo. Has atrapado ${state.radar.score} ecos.`;
+  state.radar.message = `Time. You caught ${state.radar.score} targets.`;
   renderRadar();
 }
 
@@ -434,7 +434,7 @@ function startRadar() {
   state.radar.timeLeft = 30;
   state.radar.playing = true;
   state.radar.size = 62;
-  state.radar.message = "Ronda activa. Toca el eco antes de que cambie de sector.";
+  state.radar.message = "Round live. Tap the target before it jumps sectors.";
   moveRadarTarget();
   renderRadar();
 
@@ -459,7 +459,7 @@ function hitRadar() {
   if (!state.radar.playing) return;
   state.radar.score += 1;
   state.radar.size = Math.max(38, 62 - state.radar.score);
-  state.radar.message = `Eco fijado. Total ${state.radar.score}.`;
+  state.radar.message = `Target locked. Total ${state.radar.score}.`;
   if (state.radar.score > stats.radarBest) {
     stats.radarBest = state.radar.score;
     saveObject(STORAGE_KEYS.stats, stats);
@@ -471,15 +471,17 @@ function hitRadar() {
 
 function registerOffline() {
   if (!("serviceWorker" in navigator)) {
-    cacheStatusEl.textContent = "Tu navegador no soporta service worker. El sitio sigue siendo ligero.";
+    cacheStatusEl.textContent =
+      "Your browser does not support service workers. The site still stays lightweight.";
     return;
   }
   window.addEventListener("load", async () => {
     try {
       await navigator.serviceWorker.register("./sw.js");
-      cacheStatusEl.textContent = "Cache local lista. Tras esta carga, Turboplay puede abrirse sin red.";
+      cacheStatusEl.textContent =
+        "Local cache ready. After this load, Turboplay can open without a network.";
     } catch {
-      cacheStatusEl.textContent = "No se pudo registrar el cache offline.";
+      cacheStatusEl.textContent = "Offline cache registration failed.";
     }
   });
 }
@@ -488,11 +490,12 @@ function setupInstall() {
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     state.installPrompt = event;
-    installStatusEl.textContent = "Instalacion disponible. Puedes fijar Turboplay en tu pantalla de inicio.";
+    installStatusEl.textContent =
+      "Install is available. You can pin Turboplay to your home screen.";
   });
 
   window.addEventListener("appinstalled", () => {
-    installStatusEl.textContent = "Turboplay instalada correctamente.";
+    installStatusEl.textContent = "Turboplay installed successfully.";
     state.installPrompt = null;
   });
 
@@ -501,13 +504,11 @@ function setupInstall() {
       state.installPrompt.prompt();
       const outcome = await state.installPrompt.userChoice;
       installStatusEl.textContent =
-        outcome.outcome === "accepted"
-          ? "Instalada correctamente."
-          : "Instalacion cancelada.";
+        outcome.outcome === "accepted" ? "Installed successfully." : "Install canceled.";
       state.installPrompt = null;
       return;
     }
-    installStatusEl.textContent = "En iPhone o iPad usa Compartir y luego Anadir a pantalla de inicio.";
+    installStatusEl.textContent = "On iPhone or iPad, use Share and then Add to Home Screen.";
   });
 }
 
