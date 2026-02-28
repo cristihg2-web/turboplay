@@ -84,7 +84,7 @@ const GAME_DEFS = [
 ];
 
 const state = {
-  store: loadObject(STORAGE_KEY, { bests: {}, plays: {} }),
+  store: loadObject(STORAGE_KEY, { bests: {}, plays: {}, settings: { audioEnabled: true } }),
   activeGameId: GAME_DEFS[0].id,
   controller: null,
   installPrompt: null,
@@ -105,6 +105,7 @@ const els = {
   stage: document.querySelector("[data-stage]"),
   primaryAction: document.querySelector("[data-primary-action]"),
   secondaryAction: document.querySelector("[data-secondary-action]"),
+  audioToggle: document.querySelector("[data-audio-toggle]"),
   installButton: document.querySelector("[data-install]"),
   offlineStatus: document.querySelector("[data-offline-status]"),
   installStatus: document.querySelector("[data-install-status]")
@@ -113,7 +114,8 @@ const els = {
 function loadObject(key, fallback) {
   const cloneFallback = () => ({
     bests: { ...(fallback.bests || {}) },
-    plays: { ...(fallback.plays || {}) }
+    plays: { ...(fallback.plays || {}) },
+    settings: { ...(fallback.settings || {}) }
   });
 
   try {
@@ -122,7 +124,8 @@ function loadObject(key, fallback) {
     const parsed = JSON.parse(value);
     return {
       bests: { ...(fallback.bests || {}), ...(parsed.bests || {}) },
-      plays: { ...(fallback.plays || {}), ...(parsed.plays || {}) }
+      plays: { ...(fallback.plays || {}), ...(parsed.plays || {}) },
+      settings: { ...(fallback.settings || {}), ...(parsed.settings || {}) }
     };
   } catch {
     return cloneFallback();
@@ -147,6 +150,240 @@ function randomInt(min, max) {
 
 function choice(list) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+function createAudioEngine() {
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  let context = null;
+  let master = null;
+  let enabled = state.store.settings.audioEnabled !== false;
+  let armed = false;
+
+  function ensureContext() {
+    if (!AudioCtor) return null;
+    if (!context) {
+      context = new AudioCtor();
+      master = context.createGain();
+      const compressor = context.createDynamicsCompressor();
+      compressor.threshold.value = -18;
+      compressor.knee.value = 20;
+      compressor.ratio.value = 8;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.18;
+      master.gain.value = enabled ? 0.18 : 0;
+      master.connect(compressor);
+      compressor.connect(context.destination);
+    }
+
+    if (context.state === "suspended") {
+      context.resume().catch(() => {});
+    }
+
+    return context;
+  }
+
+  function saveEnabled() {
+    state.store.settings.audioEnabled = enabled;
+    saveStore();
+  }
+
+  function setEnabled(next) {
+    enabled = Boolean(next);
+    saveEnabled();
+    if (context && master) {
+      const now = context.currentTime;
+      master.gain.cancelScheduledValues(now);
+      master.gain.setTargetAtTime(enabled ? 0.18 : 0.0001, now, 0.02);
+      if (!enabled) {
+        master.gain.setValueAtTime(0, now + 0.08);
+      }
+    }
+    updateAudioToggle();
+  }
+
+  function tone({
+    time,
+    freq = 440,
+    endFreq = freq,
+    duration = 0.12,
+    type = "square",
+    gain = 0.06,
+    attack = 0.006,
+    filter = 4800,
+    q = 0.7
+  }) {
+    const ctx = ensureContext();
+    if (!ctx || !enabled || !master) return;
+    const startTime = time ?? ctx.currentTime;
+    const oscillator = ctx.createOscillator();
+    const filterNode = ctx.createBiquadFilter();
+    const envelope = ctx.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(Math.max(24, freq), startTime);
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(24, endFreq), startTime + duration);
+    filterNode.type = "lowpass";
+    filterNode.frequency.setValueAtTime(filter, startTime);
+    filterNode.Q.value = q;
+
+    envelope.gain.setValueAtTime(0.0001, startTime);
+    envelope.gain.linearRampToValueAtTime(gain, startTime + attack);
+    envelope.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+    oscillator.connect(filterNode);
+    filterNode.connect(envelope);
+    envelope.connect(master);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + duration + 0.03);
+  }
+
+  function burst({
+    time,
+    freq = 180,
+    duration = 0.2,
+    gain = 0.08,
+    spread = 1.5
+  }) {
+    const ctx = ensureContext();
+    if (!ctx || !enabled) return;
+    const startTime = time ?? ctx.currentTime;
+    tone({ time: startTime, freq, endFreq: freq / spread, duration, gain, type: "sawtooth", filter: 2400 });
+    tone({ time: startTime + 0.01, freq: freq * 1.35, endFreq: freq / 2, duration: duration * 0.86, gain: gain * 0.58, type: "triangle", filter: 1800 });
+  }
+
+  function sequence(steps) {
+    const ctx = ensureContext();
+    if (!ctx || !enabled) return;
+    const now = ctx.currentTime + 0.005;
+    steps.forEach((step, index) => {
+      tone({ ...step, time: now + (step.delay ?? index * 0.05) });
+    });
+  }
+
+  function play(name, detail = {}) {
+    if (!armed) return;
+    const ctx = ensureContext();
+    if (!ctx || !enabled) return;
+    const now = ctx.currentTime + 0.005;
+    const padFrequencies = [392, 523.25, 659.25, 783.99];
+
+    switch (name) {
+      case "ui":
+        tone({ time: now, freq: 620, endFreq: 420, duration: 0.08, gain: 0.04, type: "triangle", filter: 3200 });
+        break;
+      case "start":
+        sequence([
+          { freq: 261.63, endFreq: 261.63, duration: 0.09, gain: 0.045, type: "square" },
+          { freq: 392, endFreq: 392, duration: 0.08, gain: 0.042, type: "square", delay: 0.07 },
+          { freq: 523.25, endFreq: 523.25, duration: 0.12, gain: 0.05, type: "triangle", delay: 0.14 }
+        ]);
+        break;
+      case "deny":
+        tone({ time: now, freq: 240, endFreq: 150, duration: 0.11, gain: 0.05, type: "sawtooth", filter: 1800 });
+        break;
+      case "slide":
+        tone({ time: now, freq: 300, endFreq: 200, duration: 0.08, gain: 0.038, type: "square", filter: 2600 });
+        break;
+      case "merge":
+        tone({ time: now, freq: 360 + clamp((detail.value || 0) / 3, 0, 420), endFreq: 220 + clamp((detail.value || 0) / 5, 0, 280), duration: 0.12, gain: 0.055, type: "triangle", filter: 4200 });
+        tone({ time: now + 0.03, freq: 520, endFreq: 740, duration: 0.09, gain: 0.03, type: "square", filter: 3200 });
+        break;
+      case "pad":
+        tone({ time: now, freq: padFrequencies[detail.index] || 440, endFreq: (padFrequencies[detail.index] || 440) * 0.96, duration: 0.18, gain: 0.06, type: "triangle", filter: 3600 });
+        break;
+      case "round":
+        sequence([
+          { freq: 392, duration: 0.08, gain: 0.04, type: "triangle" },
+          { freq: 523.25, duration: 0.08, gain: 0.045, type: "triangle", delay: 0.06 },
+          { freq: 659.25, duration: 0.12, gain: 0.05, type: "triangle", delay: 0.12 }
+        ]);
+        break;
+      case "hit":
+        tone({ time: now, freq: 820, endFreq: 520, duration: 0.08, gain: 0.05, type: "square", filter: 4200 });
+        break;
+      case "collect":
+        sequence([
+          { freq: 523.25, duration: 0.06, gain: 0.04, type: "triangle" },
+          { freq: 659.25, duration: 0.08, gain: 0.045, type: "triangle", delay: 0.05 }
+        ]);
+        break;
+      case "launch":
+        tone({ time: now, freq: 180, endFreq: 260, duration: 0.09, gain: 0.045, type: "sawtooth", filter: 2600 });
+        tone({ time: now + 0.025, freq: 320, endFreq: 240, duration: 0.1, gain: 0.028, type: "triangle", filter: 2200 });
+        break;
+      case "explosion":
+        burst({ time: now, freq: detail.freq || 170, duration: detail.duration || 0.22, gain: detail.gain || 0.075, spread: 2.1 });
+        break;
+      case "crash":
+        burst({ time: now, freq: 120, duration: 0.28, gain: 0.085, spread: 2.6 });
+        tone({ time: now + 0.02, freq: 90, endFreq: 55, duration: 0.24, gain: 0.04, type: "square", filter: 1200 });
+        break;
+      case "scrape":
+        tone({ time: now, freq: 160, endFreq: 110, duration: 0.16, gain: 0.045, type: "sawtooth", filter: 1400 });
+        break;
+      case "lane":
+        tone({ time: now, freq: 250, endFreq: 330, duration: 0.08, gain: 0.04, type: "triangle", filter: 2200 });
+        break;
+      case "stack":
+        tone({ time: now, freq: detail.perfect ? 720 : 460, endFreq: detail.perfect ? 860 : 620, duration: 0.1, gain: 0.05, type: "square", filter: 3600 });
+        if (detail.perfect) {
+          tone({ time: now + 0.03, freq: 960, endFreq: 960, duration: 0.08, gain: 0.03, type: "triangle", filter: 4200 });
+        }
+        break;
+      case "lock":
+        tone({ time: now, freq: 680, endFreq: 780, duration: 0.07, gain: 0.045, type: "square", filter: 4600 });
+        break;
+      case "brick":
+        tone({ time: now, freq: 540, endFreq: 340, duration: 0.07, gain: 0.045, type: "triangle", filter: 3600 });
+        break;
+      case "paddle":
+        tone({ time: now, freq: 220, endFreq: 300, duration: 0.06, gain: 0.04, type: "square", filter: 2600 });
+        break;
+      case "orbit":
+        tone({ time: now, freq: 480 + randomInt(0, 120), endFreq: 680 + randomInt(0, 120), duration: 0.08, gain: 0.045, type: "triangle", filter: 4400 });
+        break;
+      case "level":
+        sequence([
+          { freq: 392, duration: 0.07, gain: 0.038, type: "triangle" },
+          { freq: 523.25, duration: 0.07, gain: 0.04, type: "triangle", delay: 0.05 },
+          { freq: 783.99, duration: 0.12, gain: 0.048, type: "triangle", delay: 0.1 }
+        ]);
+        break;
+      case "fail":
+        sequence([
+          { freq: 240, endFreq: 190, duration: 0.1, gain: 0.05, type: "sawtooth", filter: 1800 },
+          { freq: 170, endFreq: 120, duration: 0.16, gain: 0.055, type: "sawtooth", filter: 1400, delay: 0.07 }
+        ]);
+        break;
+      default:
+        tone({ time: now, freq: 440, endFreq: 360, duration: 0.08, gain: 0.04, type: "triangle", filter: 3200 });
+        break;
+    }
+  }
+
+  return {
+    prime() {
+      armed = true;
+      ensureContext();
+    },
+    play,
+    toggle() {
+      setEnabled(!enabled);
+    },
+    isEnabled() {
+      return enabled;
+    },
+    setEnabled
+  };
+}
+
+const audio = createAudioEngine();
+
+function updateAudioToggle() {
+  if (!els.audioToggle) return;
+  const enabled = audio.isEnabled();
+  els.audioToggle.textContent = enabled ? "Audio On" : "Audio Off";
+  els.audioToggle.setAttribute("aria-pressed", enabled ? "true" : "false");
 }
 
 function renderRail() {
@@ -286,11 +523,13 @@ function buildTouchControls(rows) {
       button.setAttribute("aria-label", config.ariaLabel || config.label);
       button.addEventListener("pointerdown", (event) => {
         event.preventDefault();
+        audio.prime();
         config.onPress();
       });
       button.addEventListener("keydown", (event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
         event.preventDefault();
+        audio.prime();
         config.onPress();
       });
       rowEl.appendChild(button);
@@ -323,6 +562,9 @@ function createGameApi(game) {
     countPlay() {
       incrementPlay(game.id);
     },
+    sound(name, detail) {
+      audio.play(name, detail);
+    },
     setPrimary(label, handler) {
       setPrimaryAction(label, handler);
     },
@@ -334,6 +576,7 @@ function createGameApi(game) {
 
 function switchGame(gameId) {
   if (state.activeGameId === gameId && state.controller) return;
+  const hadController = Boolean(state.controller);
 
   if (state.controller && state.controller.destroy) {
     state.controller.destroy();
@@ -359,6 +602,9 @@ function switchGame(gameId) {
   setPrimaryAction("Start", () => {});
 
   state.controller = GAME_CREATORS[game.id](els.stage, api);
+  if (hadController) {
+    audio.play("ui");
+  }
 }
 
 function registerOffline() {
@@ -390,6 +636,7 @@ function setupInstall() {
   });
 
   els.installButton.addEventListener("click", async () => {
+    audio.prime();
     if (state.installPrompt) {
       state.installPrompt.prompt();
       const outcome = await state.installPrompt.userChoice;
@@ -402,15 +649,36 @@ function setupInstall() {
   });
 }
 
+function setupAudio() {
+  updateAudioToggle();
+
+  if (els.audioToggle) {
+    els.audioToggle.addEventListener("click", () => {
+      audio.prime();
+      const wasEnabled = audio.isEnabled();
+      audio.toggle();
+      if (!wasEnabled && audio.isEnabled()) {
+        audio.play("ui");
+      }
+    });
+  }
+
+  window.addEventListener("pointerdown", () => audio.prime(), { once: true });
+  window.addEventListener("keydown", () => audio.prime(), { once: true });
+}
+
 els.primaryAction.addEventListener("click", () => {
+  audio.prime();
   if (state.primaryHandler) state.primaryHandler();
 });
 
 els.secondaryAction.addEventListener("click", () => {
+  audio.prime();
   if (state.secondaryHandler) state.secondaryHandler();
 });
 
 window.addEventListener("keydown", (event) => {
+  audio.prime();
   if (state.controller && state.controller.onKey) {
     state.controller.onKey(event);
   }
@@ -577,6 +845,7 @@ function createNeonMerge(root, api) {
 
   function start() {
     api.countPlay();
+    api.sound("start");
     game = {
       grid: createGrid(),
       score: 0,
@@ -592,6 +861,7 @@ function createNeonMerge(root, api) {
     const result = applyMove(game.grid, direction);
     if (!result.moved) {
       game.message = "No move.";
+      api.sound("deny");
       render();
       return;
     }
@@ -600,9 +870,11 @@ function createNeonMerge(root, api) {
     game.score += result.gained;
     addRandom(game.grid);
     game.message = result.gained > 0 ? `+${result.gained}.` : "Shifted.";
+    api.sound(result.gained > 0 ? "merge" : "slide", { value: result.gained });
 
     if (!hasMove(game.grid)) {
       game.message = "Game over.";
+      api.sound("fail");
     }
 
     render();
@@ -680,6 +952,9 @@ function createPulsePads(root, api) {
 
   function setFlash(index) {
     memory.flashing = index;
+    if (index !== null) {
+      api.sound("pad", { index });
+    }
     renderPads();
   }
 
@@ -722,6 +997,9 @@ function createPulsePads(root, api) {
     memory.sequence.push(randomInt(0, 3));
     memory.index = 0;
     memory.round = memory.sequence.length;
+    if (memory.round > 1) {
+      api.sound("round");
+    }
     api.setCurrent(memory.round);
     api.setHint(`Round ${memory.round}.`);
     cue.textContent = `Round ${memory.round}`;
@@ -730,6 +1008,7 @@ function createPulsePads(root, api) {
 
   function start() {
     api.countPlay();
+    api.sound("start");
     clearTimers();
     memory.sequence = [];
     memory.index = 0;
@@ -756,6 +1035,7 @@ function createPulsePads(root, api) {
     memory.timers.push(resetTimer);
 
     if (memory.sequence[memory.index] !== index) {
+      api.sound("fail");
       api.updateBest(Math.max(0, memory.round - 1));
       memory.locked = true;
       cue.textContent = "Missed";
@@ -766,6 +1046,7 @@ function createPulsePads(root, api) {
     memory.index += 1;
 
     if (memory.index === memory.sequence.length) {
+      api.sound("round");
       api.updateBest(memory.round);
       memory.locked = true;
       cue.textContent = "Perfect";
@@ -881,6 +1162,7 @@ function createRadarRush(root, api) {
     radar.tickTimer = null;
     radar.moveTimer = null;
     api.updateBest(radar.score);
+    api.sound(radar.score > 0 ? "round" : "fail");
     api.setHint(message);
     api.setPrimary("Start", start);
     status.textContent = "Idle";
@@ -889,6 +1171,7 @@ function createRadarRush(root, api) {
 
   function start() {
     api.countPlay();
+    api.sound("start");
     radar.score = 0;
     radar.timeLeft = 24;
     radar.active = true;
@@ -920,11 +1203,13 @@ function createRadarRush(root, api) {
 
   target.addEventListener("pointerdown", () => {
     if (!radar.active) return;
+    audio.prime();
     radar.score += 1;
     radar.size = Math.max(52, 78 - Math.floor(radar.score / 2) * 2);
     api.setCurrent(radar.score);
     api.setHint(`${radar.score} hits.`);
     status.textContent = "Lock";
+    api.sound("hit");
     const x = parseFloat(target.style.left || "0") + radar.size / 2;
     const y = parseFloat(target.style.top || "0") + radar.size / 2;
     spawnPing(x, y);
@@ -1127,12 +1412,14 @@ function createCometDestroyer(root, api) {
     if (!game.active) return;
     if (game.cadence > 0) {
       api.setHint("Launcher cycling.");
+      api.sound("deny");
       return;
     }
 
     const tubeIndex = nextReadyTube();
     if (tubeIndex < 0) {
       api.setHint("Missile rack reloading.");
+      api.sound("deny");
       return;
     }
 
@@ -1153,6 +1440,7 @@ function createCometDestroyer(root, api) {
     game.cadence = 0.5;
     game.nextTube = (tubeIndex + 1) % game.missiles.length;
     api.setHint("Missile away.");
+    api.sound("launch");
     updateHud();
   }
 
@@ -1161,12 +1449,14 @@ function createCometDestroyer(root, api) {
     cancelAnimationFrame(game.raf);
     api.updateBest(Math.floor(game.time));
     updateHud();
+    api.sound("fail");
     api.setHint(message);
     api.setPrimary("Start", start);
   }
 
   function start() {
     api.countPlay();
+    api.sound("start");
     game.active = true;
     game.time = 0;
     game.destroyed = 0;
@@ -1512,6 +1802,7 @@ function createCometDestroyer(root, api) {
     game.shields -= 1;
     game.flash = 1;
     spawnExplosion(comet.target.x, comet.target.y, 22, "rgba(255, 145, 92, 0.92)");
+    api.sound("explosion", { freq: 120, duration: 0.28, gain: 0.09 });
     updateHud();
 
     if (game.shields <= 0) {
@@ -1536,6 +1827,7 @@ function createCometDestroyer(root, api) {
     });
 
     if (hits > 0) {
+      api.sound("explosion", { freq: 210 + hits * 20, duration: 0.18, gain: 0.055 + hits * 0.01 });
       api.setHint(`${hits} comet${hits > 1 ? "s" : ""} destroyed.`);
       updateHud();
     }
@@ -1558,6 +1850,7 @@ function createCometDestroyer(root, api) {
     const nextLevel = Math.floor(game.time / 50);
     if (nextLevel > game.level) {
       game.level = nextLevel;
+      api.sound("level");
       api.setHint(`Level ${game.level + 1}. Sky gets busier.`);
     }
 
@@ -1704,6 +1997,7 @@ function createSnakeByte(root, api) {
 
   function reset() {
     api.countPlay();
+    api.sound("start");
     game.snake = [
       { x: 8, y: 8 },
       { x: 7, y: 8 },
@@ -1743,6 +2037,7 @@ function createSnakeByte(root, api) {
       game.snake.some((node) => node.x === head.x && node.y === head.y)
     ) {
       game.running = false;
+      api.sound("crash");
       api.updateBest(game.snake.length);
       api.setHint("Crash.");
       api.setPrimary("Start", reset);
@@ -1752,6 +2047,7 @@ function createSnakeByte(root, api) {
     game.snake.unshift(head);
 
     if (head.x === game.food.x && head.y === game.food.y) {
+      api.sound("collect");
       api.setCurrent(game.snake.length);
       api.updateBest(game.snake.length);
       game.speed = Math.max(110, game.speed - 1.5);
@@ -2344,11 +2640,15 @@ function createLaneSplit(root, api) {
 
   function changeLane(delta) {
     if (!game.running) return;
-    game.lane = clamp(game.lane + delta, 0, 2);
+    const nextLane = clamp(game.lane + delta, 0, 2);
+    if (nextLane === game.lane) return;
+    game.lane = nextLane;
+    api.sound("lane");
   }
 
   function start() {
     api.countPlay();
+    api.sound("start");
     game.lane = 1;
     game.lanePosition = 1;
     game.obstacles = [];
@@ -2368,6 +2668,7 @@ function createLaneSplit(root, api) {
 
   function stop() {
     game.running = false;
+    api.sound("crash");
     api.updateBest(Math.floor(game.score));
     api.setHint("Crashed.");
     api.setPrimary("Start", start);
@@ -2380,6 +2681,7 @@ function createLaneSplit(root, api) {
     }
 
     game.graceUsed = true;
+    api.sound("scrape");
     api.setHint("Side scrape. Next hit ends the run.");
   }
 
@@ -2419,6 +2721,7 @@ function createLaneSplit(root, api) {
     const progress = (game.score % 2000) / 2000;
     if (level > game.level) {
       game.level = level;
+      api.sound("level");
       api.setHint(`${level * 2} km. Traffic speeds up.`);
     }
 
@@ -2545,6 +2848,7 @@ function createGridStacker(root, api) {
 
   function reset() {
     api.countPlay();
+    api.sound("start");
     game.placed = [{ x: 70, y: stackBaseY, width: 180, color: "#5ee1ff" }];
     game.moving = { x: 0, y: movingStartY, width: 180, color: "#ffbf47" };
     game.falling = [];
@@ -2613,6 +2917,7 @@ function createGridStacker(root, api) {
       spawnFallingPiece(game.moving.x, game.moving.y, game.moving.width, game.moving.color, game.direction * 72);
       game.moving = null;
       game.running = false;
+      api.sound("fail");
       api.updateBest(game.floors);
       api.setHint("Missed.");
       api.setPrimary("Start", reset);
@@ -2640,6 +2945,7 @@ function createGridStacker(root, api) {
     }
 
     game.floors += 1;
+    api.sound("stack", { perfect: overlap === last.width });
     api.setCurrent(game.floors);
     api.updateBest(game.floors);
     game.placed.push({
@@ -2797,6 +3103,7 @@ function createLockPick(root, api) {
 
   function start() {
     api.countPlay();
+    api.sound("start");
     game.running = true;
     game.chain = 0;
     game.speed = 0.0036;
@@ -2824,11 +3131,13 @@ function createLockPick(root, api) {
     const inside = center >= game.targetLeft && center <= game.targetLeft + game.targetWidth;
 
     if (!inside) {
+      api.sound("fail");
       stop("Lock missed.");
       return;
     }
 
     game.chain += 1;
+    api.sound("lock");
     game.speed += 0.00045;
     game.targetWidth = Math.max(54, game.targetWidth - 6);
     api.setCurrent(game.chain);
@@ -2907,6 +3216,7 @@ function createBrickPop(root, api) {
 
   function reset() {
     api.countPlay();
+    api.sound("start");
     game.paddleX = width / 2 - 48;
     game.ball = { x: width / 2, y: height - 74, vx: 128, vy: -148, radius: 8 };
     game.bricks = makeBricks();
@@ -2922,6 +3232,7 @@ function createBrickPop(root, api) {
 
   function stop(message) {
     game.running = false;
+    api.sound(message === "Wall cleared." ? "round" : "fail");
     api.updateBest(game.score);
     api.setHint(message);
     api.setPrimary("Start", reset);
@@ -2977,6 +3288,7 @@ function createBrickPop(root, api) {
       game.ball.x <= game.paddleX + 96 &&
       game.ball.vy > 0
     ) {
+      api.sound("paddle");
       game.ball.vy *= -1;
       game.ball.vx = (game.ball.x - (game.paddleX + 48)) * 4;
     }
@@ -2990,6 +3302,7 @@ function createBrickPop(root, api) {
         game.ball.y - game.ball.radius < brick.y + brick.height
       ) {
         brick.alive = false;
+        api.sound("brick");
         game.ball.vy *= -1;
         game.score += 10;
         api.setCurrent(game.score);
@@ -3109,6 +3422,7 @@ function createOrbitMatch(root, api) {
 
   function start() {
     api.countPlay();
+    api.sound("start");
     game.rotation = 0;
     game.speed = 0.00125;
     game.targetIndex = randomInt(0, 3);
@@ -3124,6 +3438,7 @@ function createOrbitMatch(root, api) {
 
   function stop(message) {
     game.running = false;
+    api.sound("fail");
     api.updateBest(game.score);
     api.setHint(message);
     api.setPrimary("Start", start);
@@ -3137,6 +3452,7 @@ function createOrbitMatch(root, api) {
     }
 
     game.score += 1;
+    api.sound("orbit");
     game.speed += 0.00011;
     game.targetIndex = randomInt(0, 3);
     api.setCurrent(game.score);
@@ -3165,6 +3481,7 @@ function createOrbitMatch(root, api) {
 }
 
 renderRail();
+setupAudio();
 registerOffline();
 setupInstall();
 switchGame(state.activeGameId);
