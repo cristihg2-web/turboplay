@@ -915,78 +915,56 @@ function createCometDestroyer(root, api) {
   stage.appendChild(rightBadge);
   stage.appendChild(
     buildTouchControls([
-      [
-        { label: "Up", onPress: () => moveRail(-1) },
-        { label: "Fire", onPress: fire, accent: true },
-        { label: "Down", onPress: () => moveRail(1) }
-      ]
+      [{ label: "Fire", onPress: fire, accent: true }]
     ])
   );
   root.appendChild(stage);
 
-  const railStart = { x: 86, y: 336 };
-  const railEnd = { x: 164, y: 214 };
-  const cityBuildings = [
-    { x: 102, y: 286, w: 70, d: 38, h: 96, palette: ["#86c5ff", "#294c77", "#152847"] },
-    { x: 138, y: 252, w: 52, d: 30, h: 72, palette: ["#f1f7ff", "#7b9cc5", "#506d94"] },
-    { x: 74, y: 244, w: 46, d: 28, h: 60, palette: ["#ffd36d", "#c27a2b", "#8f5118"] },
-    { x: 128, y: 320, w: 40, d: 24, h: 50, palette: ["#ff9db4", "#b44a68", "#7b2e49"] }
+  const cannon = {
+    baseX: 56,
+    baseY: 316,
+    muzzleX: 162,
+    muzzleY: 222,
+    beamEndX: 350,
+    beamEndY: 110
+  };
+
+  const skylineTargets = [
+    { x: 48, y: 292 },
+    { x: 72, y: 316 },
+    { x: 96, y: 286 },
+    { x: 112, y: 334 },
+    { x: 132, y: 308 }
   ];
 
   const game = {
     active: false,
     time: 0,
     destroyed: 0,
-    shields: 8,
+    shields: 10,
     level: 0,
-    railPos: 0.58,
-    targetRailPos: 0.58,
     reload: 0,
+    charge: 0,
+    beam: 0,
+    beamWidth: 0,
     spawnTick: 0,
     lastTime: 0,
     raf: 0,
     flash: 0,
+    muzzleFlash: 0,
+    railGlow: 0,
     comets: [],
-    shots: [],
     explosions: []
   };
 
-  const removeSwipe = bindSwipe(canvas, {
-    up: () => moveRail(-1),
-    down: () => moveRail(1)
-  });
-
-  function clampRail(value) {
-    return clamp(value, 0.08, 0.92);
-  }
-
-  function moveRail(direction) {
-    game.targetRailPos = clampRail(game.targetRailPos + direction * 0.14);
-  }
-
-  function setRailFromPoint(point) {
-    const dx = railEnd.x - railStart.x;
-    const dy = railEnd.y - railStart.y;
-    const lengthSquared = dx * dx + dy * dy;
-    const t = ((point.x - railStart.x) * dx + (point.y - railStart.y) * dy) / lengthSquared;
-    game.targetRailPos = clampRail(t);
-  }
-
   function currentDelay() {
     const ramp = clamp(game.time / 300, 0, 1);
-    return Math.max(620, 1460 - ramp * 480 - game.level * 36);
+    return Math.max(620, 1260 - ramp * 260 - game.level * 32);
   }
 
   function currentCometSpeed() {
     const ramp = clamp(game.time / 300, 0, 1);
-    return 66 + ramp * 38 + game.level * 3;
-  }
-
-  function cannonPosition() {
-    return {
-      x: railStart.x + (railEnd.x - railStart.x) * game.railPos,
-      y: railStart.y + (railEnd.y - railStart.y) * game.railPos
-    };
+    return 76 + ramp * 20 + game.level * 2.1;
   }
 
   function normalize(dx, dy) {
@@ -1005,25 +983,11 @@ function createCometDestroyer(root, api) {
     ctx.fill();
   }
 
-  function drawIsoBlock(cx, cy, w, d, h, palette) {
-    const top = { x: cx, y: cy - h - d / 2 };
-    const right = { x: cx + w / 2, y: cy - h };
-    const bottom = { x: cx, y: cy - h + d / 2 };
-    const left = { x: cx - w / 2, y: cy - h };
-    const baseBottom = { x: cx, y: cy + d / 2 };
-    const baseRight = { x: cx + w / 2, y: cy };
-    const baseLeft = { x: cx - w / 2, y: cy };
-
-    drawPolygon([left, bottom, baseBottom, baseLeft], palette[1]);
-    drawPolygon([right, bottom, baseBottom, baseRight], palette[2]);
-    drawPolygon([top, right, bottom, left], palette[0]);
-
-    ctx.fillStyle = "rgba(255,255,255,0.22)";
-    for (let row = 0; row < 4; row += 1) {
-      const y = cy - h + 14 + row * 14;
-      ctx.fillRect(cx - w * 0.13, y, 4, 6);
-      ctx.fillRect(cx + w * 0.03, y, 4, 6);
-    }
+  function lerpPoint(a, b, t) {
+    return {
+      x: a.x + (b.x - a.x) * t,
+      y: a.y + (b.y - a.y) * t
+    };
   }
 
   function updateHud() {
@@ -1043,79 +1007,68 @@ function createCometDestroyer(root, api) {
     });
   }
 
-  function chooseImpactPoint() {
+  function pointToSegmentDistance(point, start, end) {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSquared = dx * dx + dy * dy || 1;
+    const t = clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared, 0, 1);
+    const px = start.x + dx * t;
+    const py = start.y + dy * t;
+    return Math.hypot(point.x - px, point.y - py);
+  }
+
+  function beamSegment() {
     return {
-      x: randomInt(104, 150),
-      y: randomInt(236, 334)
+      start: { x: cannon.muzzleX, y: cannon.muzzleY },
+      end: { x: cannon.beamEndX, y: cannon.beamEndY }
     };
   }
 
-  function spawnComet() {
-    const target = chooseImpactPoint();
-    const start = {
-      x: width + randomInt(20, 64),
-      y: randomInt(44, 152)
+  function spawnComet(spread = 0) {
+    const anchor = choice(skylineTargets);
+    const target = {
+      x: anchor.x + spread * 12 + randomInt(-8, 8),
+      y: anchor.y + randomInt(-10, 10)
     };
-    const direction = normalize(target.x - start.x, target.y - start.y);
-    const speed = currentCometSpeed() + randomInt(0, 18);
+    const { start: beamStart, end: beamEnd } = beamSegment();
+    const crossPoint = lerpPoint(beamStart, beamEnd, 0.38 + Math.random() * 0.38);
+    const directionOut = normalize(crossPoint.x - target.x, crossPoint.y - target.y);
+    let travel = randomInt(154, 224);
+    let start = {
+      x: crossPoint.x + directionOut.x * travel,
+      y: crossPoint.y + directionOut.y * travel
+    };
 
+    while (start.x < width + 20) {
+      travel += 20;
+      start = {
+        x: crossPoint.x + directionOut.x * travel,
+        y: crossPoint.y + directionOut.y * travel
+      };
+    }
+
+    const velocity = normalize(target.x - start.x, target.y - start.y);
+    const speed = currentCometSpeed() + randomInt(0, 12);
     game.comets.push({
       x: start.x,
       y: start.y,
-      vx: direction.x * speed,
-      vy: direction.y * speed,
+      vx: velocity.x * speed,
+      vy: velocity.y * speed,
       target,
-      radius: randomInt(10, 15),
+      radius: randomInt(11, 15),
       angle: Math.random() * Math.PI * 2,
-      spin: (Math.random() - 0.5) * 3.2,
-      tail: randomInt(32, 52),
+      spin: (Math.random() - 0.5) * 3,
+      tail: randomInt(36, 56),
       active: true
     });
-  }
-
-  function chooseTarget() {
-    const origin = cannonPosition();
-
-    return (
-      game.comets
-        .filter((comet) => comet.active && comet.x > origin.x - 8)
-        .sort((a, b) => {
-          const aScore = Math.abs(a.y - origin.y) + a.x * 0.14;
-          const bScore = Math.abs(b.y - origin.y) + b.x * 0.14;
-          return aScore - bScore;
-        })[0] || null
-    );
   }
 
   function fire() {
-    if (!game.active || game.reload > 0) return;
-
-    const origin = cannonPosition();
-    const target = chooseTarget();
-    const fallback = {
-      x: width + 32,
-      y: 84 + (1 - game.railPos) * 150
-    };
-    const aimPoint = target
-      ? {
-          x: target.x + target.vx * 0.18,
-          y: target.y + target.vy * 0.18
-        }
-      : fallback;
-    const direction = normalize(aimPoint.x - origin.x, aimPoint.y - origin.y);
-
-    game.reload = 0.22;
-    game.shots.push({
-      x: origin.x + 14,
-      y: origin.y - 18,
-      vx: direction.x * 360,
-      vy: direction.y * 360,
-      speed: 360,
-      target,
-      radius: 4,
-      life: 1.05,
-      active: true
-    });
+    if (!game.active || game.reload > 0 || game.charge > 0 || game.beam > 0) return;
+    game.reload = 0.62;
+    game.charge = 0.16;
+    game.railGlow = 1;
+    api.setHint("Charging railgun.");
   }
 
   function stop(message) {
@@ -1132,19 +1085,21 @@ function createCometDestroyer(root, api) {
     game.active = true;
     game.time = 0;
     game.destroyed = 0;
-    game.shields = 8;
+    game.shields = 10;
     game.level = 0;
-    game.railPos = 0.58;
-    game.targetRailPos = 0.58;
     game.reload = 0;
+    game.charge = 0;
+    game.beam = 0;
+    game.beamWidth = 0;
     game.spawnTick = 0;
     game.flash = 0;
+    game.muzzleFlash = 0;
+    game.railGlow = 0;
     game.comets = [];
-    game.shots = [];
     game.explosions = [];
     game.lastTime = performance.now();
     updateHud();
-    api.setHint("Slide the rail. Fire into the comet stream.");
+    api.setHint("Fire when a comet crosses the rail line.");
     api.setPrimary("Restart", start);
     cancelAnimationFrame(game.raf);
     draw();
@@ -1167,89 +1122,175 @@ function createCometDestroyer(root, api) {
   }
 
   function drawCity() {
-    drawPolygon(
-      [
-        { x: 26, y: 266 },
-        { x: 112, y: 212 },
-        { x: 192, y: 264 },
-        { x: 104, y: 328 }
-      ],
-      "#1c2948"
-    );
+    ctx.fillStyle = "rgba(255, 174, 91, 0.1)";
+    ctx.fillRect(0, 156, width, 56);
 
-    drawPolygon(
-      [
-        { x: 104, y: 328 },
-        { x: 192, y: 264 },
-        { x: 192, y: 344 },
-        { x: 104, y: 406 }
-      ],
-      "#14203a"
-    );
-
-    cityBuildings.forEach((building) => {
-      drawIsoBlock(building.x, building.y, building.w, building.d, building.h, building.palette);
+    const mountains = [
+      [0, 202, 34, 154, 78, 208],
+      [62, 208, 116, 142, 184, 214],
+      [154, 214, 208, 164, 272, 210],
+      [246, 210, 302, 152, 360, 212]
+    ];
+    mountains.forEach(([x1, y1, x2, y2, x3, y3], index) => {
+      ctx.fillStyle = index % 2 === 0 ? "#243259" : "#1a2848";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineTo(x3, y3);
+      ctx.lineTo(x3, 238);
+      ctx.lineTo(x1, 238);
+      ctx.closePath();
+      ctx.fill();
     });
 
-    ctx.fillStyle = "rgba(255, 220, 120, 0.16)";
-    ctx.fillRect(0, 178, 88, 162);
-    ctx.fillStyle = "#0e162a";
-    ctx.fillRect(0, 208, 76, 212);
-    ctx.fillRect(20, 184, 48, 236);
-    ctx.fillRect(56, 160, 30, 260);
+    ctx.fillStyle = "#0f1830";
+    ctx.fillRect(0, 238, width, 182);
+
+    const skyline = [
+      [8, 204, 14, 216],
+      [20, 178, 20, 242],
+      [40, 168, 16, 252],
+      [56, 144, 24, 276],
+      [78, 196, 18, 248],
+      [94, 156, 22, 286],
+      [118, 136, 18, 304],
+      [138, 188, 14, 248],
+      [154, 166, 20, 288]
+    ];
+
+    skyline.forEach(([x, y, w, h], index) => {
+      ctx.fillStyle = index % 2 === 0 ? "#1a2b50" : "#223866";
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = "rgba(255, 215, 122, 0.22)";
+      for (let row = 0; row < 4; row += 1) {
+        for (let column = 0; column < 2; column += 1) {
+          ctx.fillRect(x + 3 + column * 6, y + 12 + row * 18, 3, 5);
+        }
+      }
+    });
+
+    ctx.fillStyle = "#10182d";
+    ctx.fillRect(0, 304, width, 116);
+    ctx.fillStyle = "#20304f";
+    ctx.beginPath();
+    ctx.moveTo(0, 318);
+    ctx.lineTo(126, 286);
+    ctx.lineTo(204, 304);
+    ctx.lineTo(width, 286);
+    ctx.lineTo(width, 420);
+    ctx.lineTo(0, 420);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#1d3d6d";
+    ctx.fillRect(0, 330, width, 90);
   }
 
   function drawRailAndCannon() {
-    ctx.strokeStyle = "#d8dfec";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(railStart.x - 10, railStart.y + 6);
-    ctx.lineTo(railEnd.x + 8, railEnd.y - 6);
-    ctx.stroke();
-
-    ctx.strokeStyle = "#5f6d87";
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.moveTo(railStart.x + 8, railStart.y + 2);
-    ctx.lineTo(railEnd.x + 26, railEnd.y - 10);
-    ctx.stroke();
-
-    for (let index = 0; index <= 7; index += 1) {
-      const t = index / 7;
-      const x = railStart.x + (railEnd.x - railStart.x) * t;
-      const y = railStart.y + (railEnd.y - railStart.y) * t;
-      ctx.strokeStyle = "#2b3347";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x - 8, y - 5);
-      ctx.lineTo(x + 10, y + 6);
-      ctx.stroke();
-    }
-
-    const cannon = cannonPosition();
-    const steer = game.targetRailPos - game.railPos;
+    const railGlow = Math.max(game.railGlow, game.beam * 10);
+    const glowColor = `rgba(94, 225, 255, ${0.16 + railGlow * 0.26})`;
 
     ctx.fillStyle = "rgba(0,0,0,0.28)";
     ctx.beginPath();
-    ctx.ellipse(cannon.x, cannon.y + 8, 24, 8, 0, 0, Math.PI * 2);
+    ctx.ellipse(cannon.baseX + 34, cannon.baseY + 18, 70, 18, -0.32, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#f4f7ff";
     drawPolygon(
       [
-        { x: cannon.x - 18, y: cannon.y + 2 },
-        { x: cannon.x - 2, y: cannon.y - 10 },
-        { x: cannon.x + 16, y: cannon.y + 2 },
-        { x: cannon.x - 2, y: cannon.y + 12 }
+        { x: cannon.baseX - 18, y: cannon.baseY + 26 },
+        { x: cannon.baseX + 8, y: cannon.baseY + 4 },
+        { x: cannon.baseX + 72, y: cannon.baseY + 34 },
+        { x: cannon.baseX + 42, y: cannon.baseY + 58 }
       ],
-      "#f4f7ff"
+      "#16233b"
     );
 
-    ctx.fillStyle = "#ff5e6b";
-    ctx.fillRect(cannon.x - 4, cannon.y - 16, 14, 8);
-    ctx.fillRect(cannon.x + 6, cannon.y - 24 + steer * 14, 28, 6);
-    ctx.fillStyle = "#f7c45a";
-    ctx.fillRect(cannon.x + 30, cannon.y - 24 + steer * 14, 8, 6);
+    drawPolygon(
+      [
+        { x: cannon.baseX + 22, y: cannon.baseY + 6 },
+        { x: cannon.baseX + 78, y: cannon.baseY - 48 },
+        { x: cannon.baseX + 108, y: cannon.baseY - 32 },
+        { x: cannon.baseX + 52, y: cannon.baseY + 20 }
+      ],
+      "#ced6e4"
+    );
+    drawPolygon(
+      [
+        { x: cannon.baseX + 26, y: cannon.baseY + 9 },
+        { x: cannon.baseX + 82, y: cannon.baseY - 46 },
+        { x: cannon.baseX + 90, y: cannon.baseY - 41 },
+        { x: cannon.baseX + 34, y: cannon.baseY + 12 }
+      ],
+      "#38475f"
+    );
+    drawPolygon(
+      [
+        { x: cannon.baseX + 44, y: cannon.baseY + 18 },
+        { x: cannon.baseX + 96, y: cannon.baseY - 30 },
+        { x: cannon.baseX + 118, y: cannon.baseY - 18 },
+        { x: cannon.baseX + 66, y: cannon.baseY + 28 }
+      ],
+      "#aab7cd"
+    );
+
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(cannon.baseX + 47, cannon.baseY + 15);
+    ctx.lineTo(cannon.muzzleX - 8, cannon.muzzleY - 10);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cannon.baseX + 55, cannon.baseY + 22);
+    ctx.lineTo(cannon.muzzleX - 2, cannon.muzzleY - 2);
+    ctx.stroke();
+
+    for (let index = 0; index < 4; index += 1) {
+      const x = cannon.baseX - 8 + index * 18;
+      const y = cannon.baseY + 10 + index * 4;
+      drawPolygon(
+        [
+          { x, y },
+          { x: x + 12, y: y - 10 },
+          { x: x + 28, y: y - 2 },
+          { x: x + 16, y: y + 10 }
+        ],
+        index % 2 === 0 ? "#ff4e64" : "#f7c55a"
+      );
+    }
+
+    if (game.muzzleFlash > 0) {
+      ctx.fillStyle = `rgba(255, 234, 164, ${game.muzzleFlash * 0.9})`;
+      ctx.beginPath();
+      ctx.arc(cannon.muzzleX, cannon.muzzleY, 10 + game.muzzleFlash * 18, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (game.charge > 0) {
+      const chargeRatio = game.charge / 0.16;
+      ctx.strokeStyle = `rgba(94, 225, 255, ${0.28 + (1 - chargeRatio) * 0.6})`;
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(cannon.baseX + 52, cannon.baseY + 18);
+      ctx.lineTo(cannon.muzzleX - 2, cannon.muzzleY - 6);
+      ctx.stroke();
+    }
+
+    if (game.beam > 0) {
+      const { start, end } = beamSegment();
+      ctx.strokeStyle = `rgba(255,255,255,${0.36 + game.beam * 2.6})`;
+      ctx.lineWidth = game.beamWidth + 6;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(94,225,255,${0.52 + game.beam * 4})`;
+      ctx.lineWidth = game.beamWidth;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+    }
   }
 
   function drawComet(comet) {
@@ -1290,22 +1331,6 @@ function createCometDestroyer(root, api) {
     ctx.fill();
   }
 
-  function drawShots() {
-    game.shots.forEach((shot) => {
-      ctx.strokeStyle = "rgba(94, 225, 255, 0.4)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(shot.x - shot.vx * 0.02, shot.y - shot.vy * 0.02);
-      ctx.lineTo(shot.x, shot.y);
-      ctx.stroke();
-
-      ctx.fillStyle = "#9ff6ff";
-      ctx.beginPath();
-      ctx.arc(shot.x, shot.y, shot.radius, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  }
-
   function drawExplosions() {
     game.explosions.forEach((explosion) => {
       const lifeRatio = explosion.life / explosion.maxLife;
@@ -1320,10 +1345,8 @@ function createCometDestroyer(root, api) {
   function draw() {
     drawSky();
     drawCity();
-    drawRailAndCannon();
-
     game.comets.forEach(drawComet);
-    drawShots();
+    drawRailAndCannon();
     drawExplosions();
 
     if (game.flash > 0) {
@@ -1347,6 +1370,30 @@ function createCometDestroyer(root, api) {
     api.setHint(`${game.shields} shields left.`);
   }
 
+  function resolveRailShot() {
+    const { start, end } = beamSegment();
+    let hits = 0;
+
+    game.comets.forEach((comet) => {
+      if (!comet.active) return;
+      const distance = pointToSegmentDistance(comet, start, end);
+      if (distance > comet.radius + game.beamWidth * 0.5) return;
+
+      comet.active = false;
+      hits += 1;
+      game.destroyed += 1;
+      spawnExplosion(comet.x, comet.y, "rgba(94, 225, 255, 0.92)");
+    });
+
+    if (hits > 0) {
+      api.setHint(`${hits} comet${hits > 1 ? "s" : ""} destroyed.`);
+    } else {
+      api.setHint("Missed the firing line.");
+    }
+
+    updateHud();
+  }
+
   function loop(timestamp) {
     if (!game.active) return;
     const delta = Math.min(32, timestamp - game.lastTime || 16);
@@ -1354,41 +1401,35 @@ function createCometDestroyer(root, api) {
     game.lastTime = timestamp;
     game.time += deltaSeconds;
     game.reload = Math.max(0, game.reload - deltaSeconds);
-    game.flash = Math.max(0, game.flash - deltaSeconds * 2.8);
-    game.railPos += (game.targetRailPos - game.railPos) * Math.min(1, delta * 0.014);
+    const chargeBefore = game.charge;
+    game.charge = Math.max(0, game.charge - deltaSeconds);
+    if (chargeBefore > 0 && game.charge === 0) {
+      game.beam = 0.08;
+      game.beamWidth = 10;
+      game.muzzleFlash = 1;
+      resolveRailShot();
+    }
 
-    const nextLevel = Math.floor(game.time / 45);
+    game.beam = Math.max(0, game.beam - deltaSeconds);
+    game.beamWidth = 8 + game.beam * 48;
+    game.flash = Math.max(0, game.flash - deltaSeconds * 2.8);
+    game.muzzleFlash = Math.max(0, game.muzzleFlash - deltaSeconds * 7);
+    game.railGlow = Math.max(0, game.railGlow - deltaSeconds * 3.2);
+
+    const nextLevel = Math.floor(game.time / 50);
     if (nextLevel > game.level) {
       game.level = nextLevel;
-      api.setHint(`Level ${game.level + 1}. More comets incoming.`);
+      api.setHint(`Level ${game.level + 1}. Comets accelerate.`);
     }
 
     game.spawnTick += delta;
     while (game.spawnTick >= currentDelay()) {
       game.spawnTick -= currentDelay();
       spawnComet();
-      if (game.time > 90 && Math.random() < 0.18 + clamp((game.time - 90) / 240, 0, 0.24)) {
-        spawnComet();
+      if (game.time > 120 && Math.random() < 0.12 + clamp((game.time - 120) / 300, 0, 0.18)) {
+        spawnComet(Math.random() > 0.5 ? 1 : -1);
       }
     }
-
-    game.shots.forEach((shot) => {
-      if (!shot.active) return;
-
-      if (shot.target && shot.target.active) {
-        const lock = normalize(shot.target.x - shot.x, shot.target.y - shot.y);
-        shot.vx = shot.vx * 0.9 + lock.x * shot.speed * 0.1;
-        shot.vy = shot.vy * 0.9 + lock.y * shot.speed * 0.1;
-      }
-
-      shot.x += shot.vx * deltaSeconds;
-      shot.y += shot.vy * deltaSeconds;
-      shot.life -= deltaSeconds;
-
-      if (shot.life <= 0 || shot.x > width + 24 || shot.y < -24 || shot.y > height + 24) {
-        shot.active = false;
-      }
-    });
 
     game.comets.forEach((comet) => {
       if (!comet.active) return;
@@ -1401,22 +1442,7 @@ function createCometDestroyer(root, api) {
       }
     });
 
-    game.shots.forEach((shot) => {
-      if (!shot.active) return;
-      game.comets.forEach((comet) => {
-        if (!comet.active) return;
-        if (Math.hypot(shot.x - comet.x, shot.y - comet.y) > shot.radius + comet.radius + 4) return;
-
-        shot.active = false;
-        comet.active = false;
-        game.destroyed += 1;
-        spawnExplosion(comet.x, comet.y, "rgba(94, 225, 255, 0.92)");
-        updateHud();
-      });
-    });
-
     game.comets = game.comets.filter((comet) => comet.active && comet.x > -40 && comet.y < height + 40);
-    game.shots = game.shots.filter((shot) => shot.active);
     game.explosions = game.explosions.filter((explosion) => {
       explosion.life -= deltaSeconds;
       return explosion.life > 0;
@@ -1427,34 +1453,18 @@ function createCometDestroyer(root, api) {
     game.raf = requestAnimationFrame(loop);
   }
 
-  canvas.addEventListener("pointerdown", (event) => {
-    const point = mapPointer(event, canvas, width, height);
-    if (point.x < width * 0.56) {
-      setRailFromPoint(point);
-      return;
-    }
-    fire();
-  });
+  canvas.addEventListener("pointerdown", fire);
 
   api.setPrimary("Start", start);
   updateHud();
-  api.setHint("Move the rail on the left. Fire to the right.");
+  api.setHint("Fire when a comet crosses the rail line.");
   draw();
 
   return {
     destroy() {
       cancelAnimationFrame(game.raf);
-      removeSwipe();
     },
     onKey(event) {
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        moveRail(-1);
-      }
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        moveRail(1);
-      }
       if (event.key === " " || event.key === "Enter") {
         event.preventDefault();
         fire();
