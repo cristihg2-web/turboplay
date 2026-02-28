@@ -1254,17 +1254,17 @@ function createLaneSplit(root, api) {
   };
 
   const trafficPalettes = [
-    { body: "#ff6ca8", roof: "#ffd2e6", glass: "#29496e", accent: "#fff2f8" },
-    { body: "#5ee1ff", roof: "#d6f8ff", glass: "#224f70", accent: "#f5fdff" },
-    { body: "#76f0c2", roof: "#e0fff2", glass: "#24545a", accent: "#f6fff8" },
-    { body: "#ff8e53", roof: "#ffd9be", glass: "#4f3a4f", accent: "#fff7ef" }
+    { body: "#d61f2c", roof: "#ff6b76", glass: "#17365e", accent: "#ffe8ea" },
+    { body: "#f0bf1f", roof: "#ffe17a", glass: "#1e3f63", accent: "#fff8d8" },
+    { body: "#f6f0e3", roof: "#ffffff", glass: "#264766", accent: "#fffdf8" },
+    { body: "#14161f", roof: "#4c5266", glass: "#2c4d71", accent: "#f0f3ff" }
   ];
 
   const playerPalette = {
-    body: "#ffbf47",
-    roof: "#ffe6a1",
-    glass: "#274b74",
-    accent: "#fff8d7"
+    body: "#ea1d2d",
+    roof: "#ff7c86",
+    glass: "#15365c",
+    accent: "#fff1f1"
   };
 
   function roadMetrics(y) {
@@ -1474,7 +1474,7 @@ function createLaneSplit(root, api) {
   }
 
   function drawCar(centerX, baseY, carWidth, palette, player = false, steer = 0) {
-    const carHeight = carWidth * 1.62;
+    const carHeight = carWidth * 1.46;
     const x = centerX - carWidth / 2;
     const y = baseY - carHeight;
     const lean = steer * carWidth * 0.06;
@@ -1485,56 +1485,63 @@ function createLaneSplit(root, api) {
     ctx.fill();
 
     ctx.fillStyle = "#14151d";
-    ctx.fillRect(x + carWidth * 0.05, y + carHeight * 0.64, carWidth * 0.16, carHeight * 0.22);
-    ctx.fillRect(x + carWidth * 0.79, y + carHeight * 0.64, carWidth * 0.16, carHeight * 0.22);
+    ctx.fillRect(x + carWidth * 0.06, y + carHeight * 0.66, carWidth * 0.15, carHeight * 0.18);
+    ctx.fillRect(x + carWidth * 0.79, y + carHeight * 0.66, carWidth * 0.15, carHeight * 0.18);
 
     ctx.fillStyle = palette.body;
     ctx.beginPath();
-    ctx.moveTo(x + carWidth * 0.16 + lean, y + carHeight * 0.98);
-    ctx.lineTo(x + carWidth * 0.07 + lean, y + carHeight * 0.68);
-    ctx.lineTo(x + carWidth * 0.13 + lean, y + carHeight * 0.26);
-    ctx.quadraticCurveTo(x + carWidth * 0.28 + lean, y + carHeight * 0.05, x + carWidth * 0.5 + lean, y + carHeight * 0.03);
-    ctx.quadraticCurveTo(x + carWidth * 0.72 + lean, y + carHeight * 0.05, x + carWidth * 0.87 + lean, y + carHeight * 0.26);
-    ctx.lineTo(x + carWidth * 0.93 + lean, y + carHeight * 0.68);
-    ctx.lineTo(x + carWidth * 0.84 + lean, y + carHeight * 0.98);
+    ctx.moveTo(x + carWidth * 0.2 + lean, y + carHeight * 0.98);
+    ctx.lineTo(x + carWidth * 0.08 + lean, y + carHeight * 0.66);
+    ctx.lineTo(x + carWidth * 0.15 + lean, y + carHeight * 0.22);
+    ctx.lineTo(x + carWidth * 0.34 + lean, y + carHeight * 0.08);
+    ctx.lineTo(x + carWidth * 0.66 + lean, y + carHeight * 0.08);
+    ctx.lineTo(x + carWidth * 0.85 + lean, y + carHeight * 0.22);
+    ctx.lineTo(x + carWidth * 0.92 + lean, y + carHeight * 0.66);
+    ctx.lineTo(x + carWidth * 0.8 + lean, y + carHeight * 0.98);
     ctx.closePath();
     ctx.fill();
 
+    ctx.fillStyle = palette.body;
+    ctx.fillRect(x + carWidth * 0.12 + lean, y + carHeight * 0.46, carWidth * 0.08, carHeight * 0.23);
+    ctx.fillRect(x + carWidth * 0.8 + lean, y + carHeight * 0.46, carWidth * 0.08, carHeight * 0.23);
+    ctx.fillRect(x + carWidth * 0.2 + lean, y + carHeight * 0.56, carWidth * 0.1, carHeight * 0.05);
+    ctx.fillRect(x + carWidth * 0.7 + lean, y + carHeight * 0.56, carWidth * 0.1, carHeight * 0.05);
+
     ctx.fillStyle = palette.roof;
     ctx.beginPath();
-    ctx.moveTo(x + carWidth * 0.27 + lean, y + carHeight * 0.68);
-    ctx.lineTo(x + carWidth * 0.33 + lean, y + carHeight * 0.26);
-    ctx.lineTo(x + carWidth * 0.67 + lean, y + carHeight * 0.26);
-    ctx.lineTo(x + carWidth * 0.73 + lean, y + carHeight * 0.68);
+    ctx.moveTo(x + carWidth * 0.3 + lean, y + carHeight * 0.62);
+    ctx.lineTo(x + carWidth * 0.36 + lean, y + carHeight * 0.22);
+    ctx.lineTo(x + carWidth * 0.64 + lean, y + carHeight * 0.22);
+    ctx.lineTo(x + carWidth * 0.7 + lean, y + carHeight * 0.62);
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle = palette.glass;
     ctx.beginPath();
-    ctx.moveTo(x + carWidth * 0.34 + lean, y + carHeight * 0.61);
-    ctx.lineTo(x + carWidth * 0.38 + lean, y + carHeight * 0.33);
-    ctx.lineTo(x + carWidth * 0.62 + lean, y + carHeight * 0.33);
-    ctx.lineTo(x + carWidth * 0.66 + lean, y + carHeight * 0.61);
+    ctx.moveTo(x + carWidth * 0.36 + lean, y + carHeight * 0.58);
+    ctx.lineTo(x + carWidth * 0.4 + lean, y + carHeight * 0.28);
+    ctx.lineTo(x + carWidth * 0.6 + lean, y + carHeight * 0.28);
+    ctx.lineTo(x + carWidth * 0.64 + lean, y + carHeight * 0.58);
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle = palette.accent;
-    ctx.fillRect(x + carWidth * 0.22 + lean, y + carHeight * 0.73, carWidth * 0.56, Math.max(2, carHeight * 0.04));
+    ctx.fillRect(x + carWidth * 0.24 + lean, y + carHeight * 0.71, carWidth * 0.52, Math.max(2, carHeight * 0.035));
 
     ctx.fillStyle = "rgba(255,255,255,0.2)";
-    ctx.fillRect(x + carWidth * 0.47 + lean, y + carHeight * 0.26, carWidth * 0.06, carHeight * 0.43);
+    ctx.fillRect(x + carWidth * 0.475 + lean, y + carHeight * 0.23, carWidth * 0.05, carHeight * 0.4);
 
     ctx.fillStyle = player ? "#fff5a8" : "#ff5d87";
-    ctx.fillRect(x + carWidth * 0.14 + lean, y + carHeight * 0.88, carWidth * 0.13, Math.max(2, carHeight * 0.06));
-    ctx.fillRect(x + carWidth * 0.73 + lean, y + carHeight * 0.88, carWidth * 0.13, Math.max(2, carHeight * 0.06));
+    ctx.fillRect(x + carWidth * 0.13 + lean, y + carHeight * 0.86, carWidth * 0.12, Math.max(2, carHeight * 0.05));
+    ctx.fillRect(x + carWidth * 0.75 + lean, y + carHeight * 0.86, carWidth * 0.12, Math.max(2, carHeight * 0.05));
 
     ctx.fillStyle = player ? "#fff7c9" : "rgba(255,255,255,0.72)";
-    ctx.fillRect(x + carWidth * 0.18 + lean, y + carHeight * 0.15, carWidth * 0.11, Math.max(2, carHeight * 0.05));
-    ctx.fillRect(x + carWidth * 0.71 + lean, y + carHeight * 0.15, carWidth * 0.11, Math.max(2, carHeight * 0.05));
+    ctx.fillRect(x + carWidth * 0.17 + lean, y + carHeight * 0.13, carWidth * 0.11, Math.max(2, carHeight * 0.045));
+    ctx.fillRect(x + carWidth * 0.72 + lean, y + carHeight * 0.13, carWidth * 0.11, Math.max(2, carHeight * 0.045));
 
     if (player) {
-      ctx.fillStyle = "#0d1d35";
-      ctx.fillRect(x + carWidth * 0.44 + lean, y + carHeight * 0.84, carWidth * 0.12, Math.max(2, carHeight * 0.08));
+      ctx.fillStyle = "#111420";
+      ctx.fillRect(x + carWidth * 0.43 + lean, y + carHeight * 0.82, carWidth * 0.14, Math.max(2, carHeight * 0.06));
     }
   }
 
@@ -1588,14 +1595,14 @@ function createLaneSplit(root, api) {
       .sort((a, b) => a.y - b.y)
       .forEach((obstacle) => {
         const metrics = roadMetrics(obstacle.y);
-        const carWidth = 24 + metrics.depth * 44;
+        const carWidth = 18 + metrics.depth * 34;
         drawCar(laneCenterAt(obstacle.lane, obstacle.y), obstacle.y, carWidth, obstacle.palette);
       });
 
     drawCar(
       laneCenterAt(game.lanePosition, road.playerBaseY),
       road.playerBaseY,
-      72,
+      58,
       playerPalette,
       true,
       game.lane - game.lanePosition
@@ -1639,11 +1646,11 @@ function createLaneSplit(root, api) {
       const playerY = road.playerBaseY;
       const verticalOverlap = obstacle.y > playerY - 96 && obstacle.y < playerY + 10;
       if (verticalOverlap && !obstacle.hit) {
-        const obstacleWidth = 24 + roadMetrics(obstacle.y).depth * 44;
+        const obstacleWidth = 18 + roadMetrics(obstacle.y).depth * 34;
         const obstacleCenter = laneCenterAt(obstacle.lane, obstacle.y);
         const playerCenter = laneCenterAt(game.lanePosition, playerY);
         const lateralGap = Math.abs(playerCenter - obstacleCenter);
-        const totalWidth = (72 + obstacleWidth) / 2;
+        const totalWidth = (58 + obstacleWidth) / 2;
         const isChanging = Math.abs(game.lane - game.lanePosition) > 0.08;
 
         if (lateralGap < totalWidth * 0.42) {
