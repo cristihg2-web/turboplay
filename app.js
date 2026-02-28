@@ -4133,6 +4133,9 @@ function createOrbitMatch(root, api) {
   const colors = ["#ffbf47", "#5ee1ff", "#ff6ca8", "#76f0c2"];
   const lockCenter = Math.PI * 1.5;
   const segmentSweep = Math.PI / 2;
+  const wedgeGap = 0.06;
+  const maxLockTolerance = segmentSweep / 2 - wedgeGap - 0.08;
+  const minLockTolerance = 0.28;
   const game = {
     rotation: 0,
     speed: 0.00102,
@@ -4167,7 +4170,7 @@ function createOrbitMatch(root, api) {
   }
 
   function currentTolerance() {
-    return Math.max(0.22, 0.44 - game.score * 0.01);
+    return Math.max(minLockTolerance, maxLockTolerance - game.score * 0.008);
   }
 
   function chooseNextTarget() {
@@ -4176,12 +4179,11 @@ function createOrbitMatch(root, api) {
   }
 
   function drawRing(centerX, centerY, radius, innerRadius) {
-    const gap = 0.06;
     const targetGlow = 1 - clamp(alignmentDistance() / (currentTolerance() + 0.18), 0, 1);
 
     colors.forEach((color, index) => {
-      const start = game.rotation + index * segmentSweep + gap;
-      const end = start + segmentSweep - gap * 2;
+      const start = game.rotation + index * segmentSweep + wedgeGap;
+      const end = start + segmentSweep - wedgeGap * 2;
       const isTarget = index === game.targetIndex;
 
       ctx.beginPath();
@@ -4297,7 +4299,7 @@ function createOrbitMatch(root, api) {
     ctx.fillStyle = "rgba(255,255,255,0.66)";
     ctx.font = '700 11px "SFMono-Regular", "Roboto Mono", monospace';
     ctx.textAlign = "left";
-    ctx.fillText(`Window ${Math.round((currentTolerance() / 0.44) * 100)}%`, 18, height - 18);
+    ctx.fillText(`Window ${Math.round((currentTolerance() / maxLockTolerance) * 100)}%`, 18, height - 18);
   }
 
   function start() {
