@@ -101,7 +101,7 @@ const GAME_DEFS = [
     id: "checkers",
     name: "Checkers",
     kicker: "Board",
-    blurb: "Local draughts on a pocket board.",
+    blurb: "Force jumps and beat the CPU.",
     currentLabel: "Moves",
     bestLabel: "Wins"
   },
@@ -109,7 +109,7 @@ const GAME_DEFS = [
     id: "ludo",
     name: "Ludo",
     kicker: "Board",
-    blurb: "Race your pawns home in local play.",
+    blurb: "Race two pawns home against the CPU.",
     currentLabel: "Moves",
     bestLabel: "Wins"
   },
@@ -117,7 +117,7 @@ const GAME_DEFS = [
     id: "connect4",
     name: "Connect Four",
     kicker: "Board",
-    blurb: "Drop four in a row before your rival.",
+    blurb: "Drop four before the CPU does.",
     currentLabel: "Moves",
     bestLabel: "Wins"
   },
@@ -141,7 +141,7 @@ const GAME_DEFS = [
     id: "ttt",
     name: "Tic-Tac-Toe",
     kicker: "Board",
-    blurb: "Three in a row, quick local rounds.",
+    blurb: "Beat the CPU in quick 3x3 rounds.",
     currentLabel: "Moves",
     bestLabel: "Wins"
   },
@@ -165,7 +165,7 @@ const GAME_DEFS = [
     id: "dots",
     name: "Dots and Boxes",
     kicker: "Board",
-    blurb: "Draw lines, claim boxes, steal turns.",
+    blurb: "Draw lines, claim boxes, beat the CPU.",
     currentLabel: "Boxes",
     bestLabel: "Wins"
   },
@@ -6803,12 +6803,14 @@ function createMatrix(rows, cols, factory = () => null) {
 function createTicTacToe(root, api) {
   api.setCurrentLabel("Moves");
   api.setBestLabel("Wins");
+  const HUMAN = "X";
+  const CPU = "O";
 
   const stage = document.createElement("div");
   stage.className = "board-stage";
   stage.innerHTML = `
     <div class="score-row">
-      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Mode <strong>Vs CPU</strong></div>
       <div class="score-pill">Board <strong>3x3</strong></div>
     </div>
     <div class="board-shell">
@@ -6833,6 +6835,7 @@ function createTicTacToe(root, api) {
   });
 
   let state = null;
+  let cpuTimer = 0;
   const lines = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
     [0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -6854,70 +6857,135 @@ function createTicTacToe(root, api) {
       const mark = state.board[index];
       cell.textContent = mark || "";
       cell.dataset.mark = mark || "";
-      cell.disabled = !state.running || Boolean(mark);
+      cell.disabled = !state.running || Boolean(mark) || state.turn !== HUMAN;
       cell.classList.toggle("is-win", Boolean(state.winLine?.includes(index)));
     });
     api.setCurrent(state.moves);
     noteNode.textContent = state.note;
   }
 
+  function finish(winnerMark = "") {
+    state.running = false;
+    clearTimeout(cpuTimer);
+    if (!winnerMark) {
+      state.note = "Draw board. Restart for another round.";
+      api.sound("round");
+    } else if (winnerMark === HUMAN) {
+      state.note = "You win the round.";
+      incrementWinBest(api);
+      api.sound("level");
+    } else {
+      state.note = "CPU wins the round.";
+      api.sound("fail");
+    }
+    render();
+  }
+
+  function cpuPick(board) {
+    const open = board
+      .map((mark, index) => (mark ? -1 : index))
+      .filter((value) => value >= 0);
+
+    const findLineMove = (mark) => {
+      for (const [a, b, c] of lines) {
+        const trio = [board[a], board[b], board[c]];
+        const count = trio.filter((value) => value === mark).length;
+        const empties = [a, b, c].filter((index) => !board[index]);
+        if (count === 2 && empties.length === 1) return empties[0];
+      }
+      return -1;
+    };
+
+    const winMove = findLineMove(CPU);
+    if (winMove !== -1) return winMove;
+    const blockMove = findLineMove(HUMAN);
+    if (blockMove !== -1) return blockMove;
+    if (open.includes(4)) return 4;
+    const corners = open.filter((index) => [0, 2, 6, 8].includes(index));
+    if (corners.length) return choice(corners);
+    return choice(open);
+  }
+
+  function cpuTurn() {
+    cpuTimer = 0;
+    if (!state?.running || state.turn !== CPU) return;
+    const index = cpuPick(state.board);
+    if (index < 0) return;
+    state.board[index] = CPU;
+    state.moves += 1;
+    api.sound("ui");
+    const win = winner(state.board);
+    if (win) {
+      state.winLine = win.line;
+      finish(CPU);
+      return;
+    }
+    if (state.moves === 9) {
+      finish("");
+      return;
+    }
+    state.turn = HUMAN;
+    state.note = "Your move.";
+    render();
+  }
+
   function start() {
+    clearTimeout(cpuTimer);
     state = {
       board: Array(9).fill(""),
-      turn: "X",
+      turn: HUMAN,
       moves: 0,
       running: true,
       winLine: null,
-      note: "X to move."
+      note: "Your move."
     };
     api.setPrimary("Restart", start);
     render();
   }
 
   function play(index) {
-    if (!state?.running || state.board[index]) return;
+    if (!state?.running || state.turn !== HUMAN || state.board[index]) return;
     state.board[index] = state.turn;
     state.moves += 1;
     api.sound("ui");
     const win = winner(state.board);
     if (win) {
-      state.running = false;
       state.winLine = win.line;
-      state.note = `${win.mark} wins the round.`;
-      incrementWinBest(api);
-      api.sound("level");
-      render();
+      finish(HUMAN);
       return;
     }
     if (state.moves === 9) {
-      state.running = false;
-      state.note = "Draw board. Restart for another round.";
-      api.sound("round");
-      render();
+      finish("");
       return;
     }
-    state.turn = state.turn === "X" ? "O" : "X";
-    state.note = `${state.turn} to move.`;
+    state.turn = CPU;
+    state.note = "CPU is thinking.";
     render();
+    cpuTimer = setTimeout(cpuTurn, 360);
   }
 
   api.setPrimary("Start", start);
   api.setCurrent(0);
   return {
     onKey(event) {
+      if (!state?.running || state.turn !== HUMAN) return;
       const value = Number(event.key) - 1;
       if (Number.isInteger(value) && value >= 0 && value < 9) {
         event.preventDefault();
         play(value);
       }
     },
-    destroy() {}
+    destroy() {
+      clearTimeout(cpuTimer);
+    }
   };
 }
 
 function createConnectFour(root, api) {
   api.setCurrentLabel("Moves");
   api.setBestLabel("Wins");
+  const HUMAN = "red";
+  const CPU = "gold";
 
   const ROWS = 6;
   const COLS = 7;
@@ -6925,7 +6993,7 @@ function createConnectFour(root, api) {
   stage.className = "board-stage";
   stage.innerHTML = `
     <div class="score-row">
-      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Mode <strong>Vs CPU</strong></div>
       <div class="score-pill">Grid <strong>7x6</strong></div>
     </div>
     <div class="board-shell">
@@ -6962,6 +7030,7 @@ function createConnectFour(root, api) {
   });
 
   let state = null;
+  let cpuTimer = 0;
 
   function getCell(row, col) {
     return state.board[row][col];
@@ -7001,65 +7070,132 @@ function createConnectFour(root, api) {
       cell.dataset.color = state.board[row][col] || "";
     });
     dropButtons.forEach((button, index) => {
-      button.disabled = !state.running || state.board[0][index];
+      button.disabled = !state.running || state.board[0][index] || state.turn !== HUMAN;
       button.dataset.turn = state.turn;
     });
     api.setCurrent(state.moves);
   }
 
+  function availableRow(col, board = state.board) {
+    let row = ROWS - 1;
+    while (row >= 0 && board[row][col]) row -= 1;
+    return row;
+  }
+
+  function finish(winnerColor = "") {
+    state.running = false;
+    clearTimeout(cpuTimer);
+    if (!winnerColor) {
+      setNote("Draw grid. Restart for another round.");
+      api.sound("round");
+    } else if (winnerColor === HUMAN) {
+      setNote("You connect four.");
+      incrementWinBest(api);
+      api.sound("level");
+    } else {
+      setNote("CPU connects four.");
+      api.sound("fail");
+    }
+    render();
+  }
+
+  function pickCpuColumn() {
+    const order = [3, 2, 4, 1, 5, 0, 6];
+    const testDrop = (color, col) => {
+      const row = availableRow(col);
+      if (row < 0) return false;
+      state.board[row][col] = color;
+      const won = checkWin(row, col, color);
+      state.board[row][col] = null;
+      return won;
+    };
+
+    for (const col of order) {
+      if (testDrop(CPU, col)) return col;
+    }
+    for (const col of order) {
+      if (testDrop(HUMAN, col)) return col;
+    }
+    const valid = order.filter((col) => availableRow(col) >= 0);
+    return valid[0] ?? -1;
+  }
+
+  function placeDisc(col, color) {
+    const row = availableRow(col);
+    if (row < 0) return false;
+    state.board[row][col] = color;
+    state.moves += 1;
+    api.sound("drop");
+    if (checkWin(row, col, color)) {
+      finish(color);
+      return true;
+    }
+    if (state.moves === ROWS * COLS) {
+      finish("");
+      return true;
+    }
+    return false;
+  }
+
+  function cpuTurn() {
+    cpuTimer = 0;
+    if (!state?.running || state.turn !== CPU) return;
+    const col = pickCpuColumn();
+    if (col < 0) return;
+    const done = placeDisc(col, CPU);
+    if (done) {
+      render();
+      return;
+    }
+    state.turn = HUMAN;
+    setNote("Your turn. Drop a disc.");
+    render();
+  }
+
   function start() {
+    clearTimeout(cpuTimer);
     state = {
       board: createMatrix(ROWS, COLS),
-      turn: "red",
+      turn: HUMAN,
       moves: 0,
       running: true
     };
-    setNote("Red opens. Tap a column.");
+    setNote("Your turn. Drop a disc.");
     api.setPrimary("Restart", start);
     render();
   }
 
   function drop(col) {
-    if (!state?.running) return;
-    let row = ROWS - 1;
-    while (row >= 0 && state.board[row][col]) row -= 1;
-    if (row < 0) {
+    if (!state?.running || state.turn !== HUMAN) return;
+    if (availableRow(col) < 0) {
       api.sound("deny");
       return;
     }
-    state.board[row][col] = state.turn;
-    state.moves += 1;
-    api.sound("drop");
-    if (checkWin(row, col, state.turn)) {
-      state.running = false;
-      setNote(`${state.turn === "red" ? "Red" : "Gold"} connects four.`);
-      incrementWinBest(api);
-      api.sound("level");
+    const done = placeDisc(col, HUMAN);
+    if (done) {
       render();
       return;
     }
-    if (state.moves === ROWS * COLS) {
-      state.running = false;
-      setNote("Draw grid. Restart for another round.");
-      render();
-      return;
-    }
-    state.turn = state.turn === "red" ? "gold" : "red";
-    setNote(`${state.turn === "red" ? "Red" : "Gold"} to drop.`);
+    state.turn = CPU;
+    setNote("CPU is thinking.");
     render();
+    cpuTimer = setTimeout(cpuTurn, 380);
   }
 
   api.setPrimary("Start", start);
   api.setCurrent(0);
   return {
     onKey(event) {
+      if (!state?.running || state.turn !== HUMAN) return;
       const col = Number(event.key) - 1;
       if (Number.isInteger(col) && col >= 0 && col < COLS) {
         event.preventDefault();
         drop(col);
       }
     },
-    destroy() {}
+    destroy() {
+      clearTimeout(cpuTimer);
+    }
   };
 }
 
@@ -7399,13 +7535,15 @@ function createSlidingPuzzle(root, api) {
 function createCheckers(root, api) {
   api.setCurrentLabel("Moves");
   api.setBestLabel("Wins");
+  const HUMAN = "red";
+  const CPU = "black";
 
   const size = 8;
   const stage = document.createElement("div");
   stage.className = "board-stage";
   stage.innerHTML = `
     <div class="score-row">
-      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Mode <strong>Vs CPU</strong></div>
       <div class="score-pill">Board <strong>8x8</strong></div>
     </div>
     <div class="board-shell">
@@ -7430,6 +7568,7 @@ function createCheckers(root, api) {
   });
 
   let state = null;
+  let cpuTimer = 0;
 
   function inBounds(row, col) {
     return row >= 0 && row < size && col >= 0 && col < size;
@@ -7449,69 +7588,75 @@ function createCheckers(root, api) {
     return piece.color === "red" ? [[-1, 1], [-1, -1]] : [[1, 1], [1, -1]];
   }
 
-  function movesFor(row, col, captureOnly = false) {
-    const piece = state.board[row][col];
-    if (!piece || piece.color !== state.turn) return [];
+  function movesFor(color, row, col, captureOnly = false, board = state.board) {
+    const piece = board[row][col];
+    if (!piece || piece.color !== color) return [];
     const moves = [];
     for (const [dr, dc] of dirs(piece)) {
       const stepRow = row + dr;
       const stepCol = col + dc;
       if (!inBounds(stepRow, stepCol)) continue;
-      const stepPiece = state.board[stepRow][stepCol];
+      const stepPiece = board[stepRow][stepCol];
       if (!stepPiece && !captureOnly) {
-        moves.push({ row: stepRow, col: stepCol, capture: null });
+        moves.push({ fromRow: row, fromCol: col, row: stepRow, col: stepCol, capture: null });
         continue;
       }
       if (stepPiece && stepPiece.color !== piece.color) {
         const jumpRow = row + dr * 2;
         const jumpCol = col + dc * 2;
-        if (inBounds(jumpRow, jumpCol) && !state.board[jumpRow][jumpCol]) {
-          moves.push({ row: jumpRow, col: jumpCol, capture: [stepRow, stepCol] });
+        if (inBounds(jumpRow, jumpCol) && !board[jumpRow][jumpCol]) {
+          moves.push({ fromRow: row, fromCol: col, row: jumpRow, col: jumpCol, capture: [stepRow, stepCol] });
         }
       }
     }
     return moves;
   }
 
-  function turnHasCapture() {
+  function colorHasCapture(color, board = state.board) {
     for (let row = 0; row < size; row += 1) {
       for (let col = 0; col < size; col += 1) {
-        if (movesFor(row, col, true).some((move) => move.capture)) return true;
+        if (movesFor(color, row, col, true, board).some((move) => move.capture)) return true;
       }
     }
     return false;
   }
 
-  function playerHasMove(color) {
-    const savedTurn = state.turn;
-    state.turn = color;
+  function legalMoves(color, source = null, board = state.board) {
+    const forceCapture = colorHasCapture(color, board);
+    const list = [];
+    if (source) {
+      return movesFor(color, source.row, source.col, forceCapture, board).filter((move) => !forceCapture || move.capture);
+    }
     for (let row = 0; row < size; row += 1) {
       for (let col = 0; col < size; col += 1) {
-        if (movesFor(row, col, turnHasCapture()).length) {
-          state.turn = savedTurn;
-          return true;
-        }
+        list.push(...movesFor(color, row, col, forceCapture, board).filter((move) => !forceCapture || move.capture));
       }
     }
-    state.turn = savedTurn;
-    return false;
+    return list;
+  }
+
+  function playerHasMove(color, board = state.board) {
+    return legalMoves(color, null, board).length > 0;
+  }
+
+  function pieceCount(color, board = state.board) {
+    return board.flat().filter((piece) => piece?.color === color).length;
   }
 
   function render() {
-    const captureOnly = state.running ? turnHasCapture() : false;
+    const legalTargets = new Set(state.legalMoves.map((move) => `${move.row}:${move.col}`));
     cells.forEach((cell, index) => {
       const row = Math.floor(index / size);
       const col = index % size;
       const piece = state.board[row][col];
-      const legal = state.legalMoves.some((move) => move.row === row && move.col === col);
+      const legal = legalTargets.has(`${row}:${col}`);
       cell.className = `checker-cell${(row + col) % 2 ? " is-dark" : ""}`;
       cell.classList.toggle("is-selected", Boolean(state.selected && state.selected.row === row && state.selected.col === col));
       cell.classList.toggle("is-target", legal);
-      cell.disabled = !state.running || (!(piece && piece.color === state.turn) && !legal);
+      cell.disabled = !state.running || state.turn !== HUMAN || (!(piece && piece.color === HUMAN) && !legal);
       cell.innerHTML = piece
         ? `<span class="checker-piece is-${piece.color}${piece.king ? " is-king" : ""}"></span>`
         : "";
-      cell.dataset.capture = captureOnly ? "on" : "off";
     });
     api.setCurrent(state.moves);
     noteNode.textContent = state.note;
@@ -7519,68 +7664,134 @@ function createCheckers(root, api) {
 
   function endGame(winner) {
     state.running = false;
-    state.note = `${winner === "red" ? "Red" : "Black"} wins the board.`;
-    incrementWinBest(api);
-    api.sound("level");
+    clearTimeout(cpuTimer);
+    if (winner === HUMAN) {
+      state.note = "You win the board.";
+      incrementWinBest(api);
+      api.sound("level");
+    } else {
+      state.note = "CPU wins the board.";
+      api.sound("fail");
+    }
+    render();
+  }
+
+  function applyMove(move) {
+    const piece = state.board[move.fromRow][move.fromCol];
+    state.board[move.fromRow][move.fromCol] = null;
+    state.board[move.row][move.col] = piece;
+    if (move.capture) {
+      const [cr, cc] = move.capture;
+      state.board[cr][cc] = null;
+    }
+    if ((piece.color === HUMAN && move.row === 0) || (piece.color === CPU && move.row === size - 1)) {
+      piece.king = true;
+    }
+    return piece;
+  }
+
+  function cpuScore(move) {
+    const piece = state.board[move.fromRow][move.fromCol];
+    const captured = move.capture ? state.board[move.capture[0]][move.capture[1]] : null;
+    const willKing = !piece.king && move.row === size - 1;
+    return (
+      (move.capture ? 100 : 0) +
+      (captured?.king ? 30 : 0) +
+      (willKing ? 24 : 0) +
+      (piece.king ? 8 : 0) +
+      (3.5 - Math.abs(move.col - 3.5))
+    );
+  }
+
+  function cpuTurn(source = null) {
+    cpuTimer = 0;
+    if (!state?.running || state.turn !== CPU) return;
+    const options = legalMoves(CPU, source);
+    if (!options.length) {
+      endGame(HUMAN);
+      return;
+    }
+    const ranked = [...options].sort((a, b) => cpuScore(b) - cpuScore(a));
+    const bestScore = cpuScore(ranked[0]);
+    const move = choice(ranked.filter((entry) => cpuScore(entry) === bestScore));
+    applyMove(move);
+    state.moves += 1;
+    api.sound(move.capture ? "lock" : "slide");
+    if (!pieceCount(HUMAN)) {
+      endGame(CPU);
+      return;
+    }
+    if (move.capture) {
+      const follow = legalMoves(CPU, { row: move.row, col: move.col }).filter((entry) => entry.capture);
+      if (follow.length) {
+        state.note = "CPU keeps jumping.";
+        render();
+        cpuTimer = setTimeout(() => cpuTurn({ row: move.row, col: move.col }), 360);
+        return;
+      }
+    }
+    if (!playerHasMove(HUMAN)) {
+      endGame(CPU);
+      return;
+    }
+    state.turn = HUMAN;
+    state.selected = null;
+    state.legalMoves = [];
+    state.note = "Your turn.";
     render();
   }
 
   function start() {
+    clearTimeout(cpuTimer);
     state = {
       board: initialBoard(),
-      turn: "red",
+      turn: HUMAN,
       selected: null,
       legalMoves: [],
       moves: 0,
       running: true,
-      note: "Red opens. Captures are forced."
+      note: "Your turn. Captures are forced."
     };
     api.setPrimary("Restart", start);
     render();
   }
 
   function tap(row, col) {
-    if (!state?.running) return;
-    const captureOnly = turnHasCapture();
+    if (!state?.running || state.turn !== HUMAN) return;
     const target = state.legalMoves.find((move) => move.row === row && move.col === col);
     if (state.selected && target) {
-      const piece = state.board[state.selected.row][state.selected.col];
-      state.board[state.selected.row][state.selected.col] = null;
-      state.board[row][col] = piece;
-      if (target.capture) {
-        const [cr, cc] = target.capture;
-        state.board[cr][cc] = null;
-      }
-      if ((piece.color === "red" && row === 0) || (piece.color === "black" && row === size - 1)) {
-        piece.king = true;
-      }
+      applyMove(target);
       state.moves += 1;
       api.sound(target.capture ? "lock" : "slide");
+      if (!pieceCount(CPU)) {
+        endGame(HUMAN);
+        return;
+      }
       if (target.capture) {
-        state.selected = { row, col };
-        state.legalMoves = movesFor(row, col, true).filter((move) => move.capture);
+        state.selected = { row: target.row, col: target.col };
+        state.legalMoves = legalMoves(HUMAN, state.selected).filter((move) => move.capture);
         if (state.legalMoves.length) {
-          state.note = `${piece.color === "red" ? "Red" : "Black"} keeps jumping.`;
+          state.note = "Keep jumping.";
           render();
           return;
         }
       }
-      const nextTurn = state.turn === "red" ? "black" : "red";
-      state.turn = nextTurn;
+      state.turn = CPU;
       state.selected = null;
       state.legalMoves = [];
-      if (!playerHasMove(nextTurn)) {
-        endGame(piece.color);
+      if (!playerHasMove(CPU)) {
+        endGame(HUMAN);
         return;
       }
-      state.note = `${nextTurn === "red" ? "Red" : "Black"} to move.`;
+      state.note = "CPU is thinking.";
       render();
+      cpuTimer = setTimeout(() => cpuTurn(), 420);
       return;
     }
 
     const piece = state.board[row][col];
-    if (!piece || piece.color !== state.turn) return;
-    const moves = movesFor(row, col, captureOnly).filter((move) => !captureOnly || move.capture);
+    if (!piece || piece.color !== HUMAN) return;
+    const moves = legalMoves(HUMAN, { row, col });
     if (!moves.length) return;
     state.selected = { row, col };
     state.legalMoves = moves;
@@ -7592,7 +7803,9 @@ function createCheckers(root, api) {
   api.setPrimary("Start", start);
   api.setCurrent(0);
   return {
-    destroy() {}
+    destroy() {
+      clearTimeout(cpuTimer);
+    }
   };
 }
 
@@ -7752,13 +7965,15 @@ function createReversi(root, api) {
 function createDotsAndBoxes(root, api) {
   api.setCurrentLabel("Boxes");
   api.setBestLabel("Wins");
+  const HUMAN = "amber";
+  const CPU = "mint";
 
   const size = 4;
   const stage = document.createElement("div");
   stage.className = "board-stage";
   stage.innerHTML = `
     <div class="score-row">
-      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Mode <strong>Vs CPU</strong></div>
       <div class="score-pill">Board <strong>4x4</strong></div>
     </div>
     <div class="board-shell">
@@ -7771,6 +7986,7 @@ function createDotsAndBoxes(root, api) {
   const boardNode = stage.querySelector("[data-board]");
   const noteNode = stage.querySelector("[data-note]");
   let state = null;
+  let cpuTimer = 0;
 
   function lineCount() {
     return state.hLines.flat().filter(Boolean).length + state.vLines.flat().filter(Boolean).length;
@@ -7780,8 +7996,7 @@ function createDotsAndBoxes(root, api) {
     return owner === "amber" ? "Amber" : "Mint";
   }
 
-  function claimBoxes(kind, row, col) {
-    const claimed = [];
+  function affectedBoxes(kind, row, col) {
     const checks = [];
     if (kind === "h") {
       if (row > 0) checks.push([row - 1, col]);
@@ -7790,7 +8005,12 @@ function createDotsAndBoxes(root, api) {
       if (col > 0) checks.push([row, col - 1]);
       if (col < size) checks.push([row, col]);
     }
-    checks.forEach(([boxRow, boxCol]) => {
+    return checks.filter(([boxRow, boxCol]) => state.boxes[boxRow]?.[boxCol] !== undefined);
+  }
+
+  function claimBoxes(kind, row, col) {
+    const claimed = [];
+    affectedBoxes(kind, row, col).forEach(([boxRow, boxCol]) => {
       if (state.boxes[boxRow]?.[boxCol]) return;
       if (
         state.hLines[boxRow][boxCol] &&
@@ -7804,6 +8024,47 @@ function createDotsAndBoxes(root, api) {
       }
     });
     return claimed;
+  }
+
+  function sideCount(boxRow, boxCol, pending = null) {
+    let count = 0;
+    if (state.hLines[boxRow][boxCol] || (pending?.kind === "h" && pending.row === boxRow && pending.col === boxCol)) count += 1;
+    if (state.hLines[boxRow + 1][boxCol] || (pending?.kind === "h" && pending.row === boxRow + 1 && pending.col === boxCol)) count += 1;
+    if (state.vLines[boxRow][boxCol] || (pending?.kind === "v" && pending.row === boxRow && pending.col === boxCol)) count += 1;
+    if (state.vLines[boxRow][boxCol + 1] || (pending?.kind === "v" && pending.row === boxRow && pending.col === boxCol + 1)) count += 1;
+    return count;
+  }
+
+  function availableLines() {
+    const lines = [];
+    for (let row = 0; row < size + 1; row += 1) {
+      for (let col = 0; col < size; col += 1) {
+        if (!state.hLines[row][col]) lines.push({ kind: "h", row, col });
+      }
+    }
+    for (let row = 0; row < size; row += 1) {
+      for (let col = 0; col < size + 1; col += 1) {
+        if (!state.vLines[row][col]) lines.push({ kind: "v", row, col });
+      }
+    }
+    return lines;
+  }
+
+  function cpuPickLine() {
+    const lines = availableLines();
+    let best = null;
+    let bestScore = -Infinity;
+    for (const line of lines) {
+      const boxes = affectedBoxes(line.kind, line.row, line.col);
+      const claimed = boxes.filter(([boxRow, boxCol]) => sideCount(boxRow, boxCol, line) === 4).length;
+      const danger = boxes.reduce((max, [boxRow, boxCol]) => Math.max(max, sideCount(boxRow, boxCol, line)), 0);
+      const score = claimed * 100 - danger * 8 + randomInt(0, 4);
+      if (score > bestScore) {
+        bestScore = score;
+        best = line;
+      }
+    }
+    return best;
   }
 
   function render() {
@@ -7823,7 +8084,7 @@ function createDotsAndBoxes(root, api) {
           line.className = "dots-line is-horizontal";
           const owner = state.hLines[row / 2][(col - 1) / 2];
           if (owner) line.dataset.owner = owner;
-          line.disabled = !state.running || Boolean(owner);
+          line.disabled = !state.running || Boolean(owner) || state.turn !== HUMAN;
           line.addEventListener("pointerdown", (event) => {
             event.preventDefault();
             playLine("h", row / 2, (col - 1) / 2);
@@ -7837,7 +8098,7 @@ function createDotsAndBoxes(root, api) {
           line.className = "dots-line is-vertical";
           const owner = state.vLines[(row - 1) / 2][col / 2];
           if (owner) line.dataset.owner = owner;
-          line.disabled = !state.running || Boolean(owner);
+          line.disabled = !state.running || Boolean(owner) || state.turn !== HUMAN;
           line.addEventListener("pointerdown", (event) => {
             event.preventDefault();
             playLine("v", (row - 1) / 2, col / 2);
@@ -7861,40 +8122,55 @@ function createDotsAndBoxes(root, api) {
 
   function finish() {
     state.running = false;
+    clearTimeout(cpuTimer);
     if (state.scores.amber === state.scores.mint) {
       state.note = "Even board.";
       api.sound("round");
     } else {
       state.note = `${ownerLabel(state.scores.amber > state.scores.mint ? "amber" : "mint")} wins the grid.`;
-      incrementWinBest(api);
-      api.sound("level");
+      if (state.scores.amber > state.scores.mint) {
+        incrementWinBest(api);
+        api.sound("level");
+      } else {
+        api.sound("fail");
+      }
     }
     render();
   }
 
   function start() {
+    clearTimeout(cpuTimer);
     state = {
       hLines: createMatrix(size + 1, size, () => ""),
       vLines: createMatrix(size, size + 1, () => ""),
       boxes: createMatrix(size, size, () => ""),
       scores: { amber: 0, mint: 0 },
-      turn: "amber",
+      turn: HUMAN,
       running: true,
-      note: "Amber draws first."
+      note: "Your line. Claim a box to keep the turn."
     };
     api.setPrimary("Restart", start);
     render();
   }
 
-  function playLine(kind, row, col) {
+  function cpuTurn() {
+    cpuTimer = 0;
+    if (!state?.running || state.turn !== CPU) return;
+    const line = cpuPickLine();
+    if (!line) return;
+    playLine(line.kind, line.row, line.col, true);
+  }
+
+  function playLine(kind, row, col, fromCpu = false) {
     if (!state?.running) return;
+    if (!fromCpu && state.turn !== HUMAN) return;
     if (kind === "h") state.hLines[row][col] = state.turn;
     else state.vLines[row][col] = state.turn;
     const claimed = claimBoxes(kind, row, col);
     api.sound(claimed.length ? "lock" : "ui");
     if (!claimed.length) {
-      state.turn = state.turn === "amber" ? "mint" : "amber";
-      state.note = `${ownerLabel(state.turn)} to draw.`;
+      state.turn = state.turn === HUMAN ? CPU : HUMAN;
+      state.note = state.turn === HUMAN ? "Your line." : "CPU is drawing.";
     } else {
       state.note = `${ownerLabel(state.turn)} claims ${claimed.length} box${claimed.length === 1 ? "" : "es"}.`;
     }
@@ -7903,12 +8179,17 @@ function createDotsAndBoxes(root, api) {
       return;
     }
     render();
+    if (state.running && state.turn === CPU) {
+      cpuTimer = setTimeout(cpuTurn, claimed.length ? 280 : 420);
+    }
   }
 
   api.setPrimary("Start", start);
   api.setCurrent(0);
   return {
-    destroy() {}
+    destroy() {
+      clearTimeout(cpuTimer);
+    }
   };
 }
 
@@ -8106,17 +8387,20 @@ function createLudo(root, api) {
   api.setCurrentLabel("Moves");
   api.setBestLabel("Wins");
 
+  const HUMAN = "red";
+  const CPU = "gold";
   const pathLength = 24;
   const finish = 27;
+  const safeSpaces = [0, 12];
   const players = [
-    { id: "red", label: "Red", start: 0 },
-    { id: "gold", label: "Gold", start: 12 }
+    { id: HUMAN, label: "You", start: 0 },
+    { id: CPU, label: "CPU", start: 12 }
   ];
   const stage = document.createElement("div");
   stage.className = "board-stage";
   stage.innerHTML = `
     <div class="score-row">
-      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Mode <strong>Vs CPU</strong></div>
       <div class="score-pill">Pawns <strong>2 each</strong></div>
     </div>
     <div class="board-shell ludo-shell">
@@ -8154,20 +8438,26 @@ function createLudo(root, api) {
   });
 
   let state = null;
+  let cpuTimer = 0;
 
   function playerById(id) {
     return players.find((player) => player.id === id);
+  }
+
+  function enemyId(id) {
+    return id === HUMAN ? CPU : HUMAN;
   }
 
   function absolutePosition(playerId, progress) {
     return (playerById(playerId).start + progress) % pathLength;
   }
 
-  function movablePawns(player) {
-    const dice = state.die;
-    return state.pawns[player.id]
+  function movablePawns(playerOrId = state.turn, dice = state.die) {
+    const playerId = typeof playerOrId === "string" ? playerOrId : playerOrId.id;
+    return state.pawns[playerId]
       .map((progress, index) => ({ progress, index }))
       .filter(({ progress }) => {
+        if (progress === finish) return false;
         if (progress === -1) return dice === 6;
         return progress + dice <= finish;
       });
@@ -8175,6 +8465,36 @@ function createLudo(root, api) {
 
   function pawnChip(playerId, index) {
     return `<span class="ludo-pawn is-${playerId}" data-pawn="${playerId}-${index}"></span>`;
+  }
+
+  function nextProgress(progress, dice) {
+    return progress === -1 ? 0 : progress + dice;
+  }
+
+  function captureTargets(playerId, progress, dice) {
+    const next = nextProgress(progress, dice);
+    if (next >= pathLength) return [];
+    const abs = absolutePosition(playerId, next);
+    if (safeSpaces.includes(abs)) return [];
+    const enemy = enemyId(playerId);
+    return state.pawns[enemy].flatMap((value, index) =>
+      value >= 0 && value < pathLength && absolutePosition(enemy, value) === abs ? [index] : []
+    );
+  }
+
+  function queueCpu(action, delay) {
+    clearTimeout(cpuTimer);
+    cpuTimer = setTimeout(action, delay);
+  }
+
+  function syncActions() {
+    if (!state?.running) {
+      api.setPrimary("Restart", start);
+      api.setSecondary("", null);
+      return;
+    }
+    api.setPrimary("Roll", roll);
+    api.setSecondary("Restart", start);
   }
 
   function render() {
@@ -8200,103 +8520,187 @@ function createLudo(root, api) {
       });
     });
     pawnsNode.innerHTML = "";
-    const active = state.running && state.die > 0 ? movablePawns(playerById(state.turn)) : [];
     const section = document.createElement("div");
     section.className = "ludo-pawn-row";
-    active.forEach(({ index, progress }) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = `ludo-pawn-button is-${state.turn}`;
-      button.textContent = progress === -1 ? `Home ${index + 1}` : `Pawn ${index + 1}`;
-      button.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        movePawn(index);
-      });
-      section.appendChild(button);
-    });
-    if (!active.length && state.running && state.die > 0) {
-      section.innerHTML = '<div class="ludo-pass">No move on this roll.</div>';
+    if (state.running && state.turn === HUMAN && state.die > 0) {
+      const active = movablePawns(HUMAN);
+      if (active.length) {
+        active.forEach(({ index, progress }) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `ludo-pawn-button is-${state.turn}`;
+          button.textContent = progress === -1 ? `Home ${index + 1}` : `Pawn ${index + 1}`;
+          button.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            movePawn(index);
+          });
+          section.appendChild(button);
+        });
+      } else {
+        section.innerHTML = '<div class="ludo-pass">No move on this roll.</div>';
+      }
+    } else if (state.running && state.turn === CPU && state.die > 0) {
+      section.innerHTML = '<div class="ludo-pass">CPU is choosing a pawn.</div>';
+    } else if (state.running && state.turn === HUMAN) {
+      section.innerHTML = '<div class="ludo-pass">Roll to move a pawn.</div>';
+    } else if (state.running) {
+      section.innerHTML = '<div class="ludo-pass">CPU is about to roll.</div>';
     }
     pawnsNode.appendChild(section);
     dieNode.textContent = state.die > 0 ? String(state.die) : "-";
     turnNode.textContent = playerById(state.turn).label;
     noteNode.textContent = state.note;
     api.setCurrent(state.moves);
+    syncActions();
   }
 
-  function switchTurn(extra = false) {
+  function finishRound(winnerId) {
+    state.running = false;
+    clearTimeout(cpuTimer);
+    state.die = 0;
+    if (winnerId === HUMAN) {
+      state.note = "You win the race.";
+      incrementWinBest(api);
+      api.sound("level");
+    } else {
+      state.note = "CPU wins the race.";
+      api.sound("fail");
+    }
+    render();
+  }
+
+  function advanceTurn(extra = false, summary = "") {
     state.die = 0;
     if (!extra) {
-      state.turn = state.turn === "red" ? "gold" : "red";
+      state.turn = enemyId(state.turn);
     }
-    state.note = `${playerById(state.turn).label} to roll.`;
+    const prefix = summary ? `${summary} ` : "";
+    state.note = `${prefix}${state.turn === HUMAN ? (extra ? "Roll again." : "Your roll.") : (extra ? "CPU rolls again." : "CPU turn.")}`;
     render();
+    if (state.running && state.turn === CPU) {
+      queueCpu(cpuRoll, extra ? 460 : 640);
+    }
   }
 
   function start() {
+    clearTimeout(cpuTimer);
     state = {
       pawns: { red: [-1, -1], gold: [-1, -1] },
-      turn: "red",
+      turn: HUMAN,
       die: 0,
       moves: 0,
       running: true,
-      note: "Red to roll."
+      note: "Your roll."
     };
-    api.setPrimary("Roll", roll);
-    api.setSecondary("Restart", start);
     render();
   }
 
-  function roll() {
+  function roll(fromCpu = false) {
     if (!state?.running || state.die > 0) return;
+    if ((!fromCpu && state.turn !== HUMAN) || (fromCpu && state.turn !== CPU)) return;
     state.die = randomInt(1, 6);
-    api.sound("roll");
-    const moves = movablePawns(playerById(state.turn));
+    api.sound("ui");
+    const moves = movablePawns(state.turn, state.die);
     if (!moves.length) {
       state.note = `${playerById(state.turn).label} rolled ${state.die} and cannot move.`;
       render();
-      setTimeout(() => switchTurn(false), 520);
+      queueCpu(() => advanceTurn(false), 620);
       return;
     }
-    state.note = `${playerById(state.turn).label} rolled ${state.die}. Choose a pawn.`;
+    state.note = state.turn === HUMAN ? `You rolled ${state.die}. Choose a pawn.` : `CPU rolled ${state.die}.`;
     render();
+    if (state.turn === CPU) {
+      queueCpu(cpuMove, 420);
+    }
   }
 
-  function movePawn(index) {
+  function scorePawn(playerId, index, dice) {
+    const progress = state.pawns[playerId][index];
+    const next = nextProgress(progress, dice);
+    const abs = next < pathLength ? absolutePosition(playerId, next) : -1;
+    const captures = captureTargets(playerId, progress, dice).length;
+    let score = next * 4 + progress * 2 + Math.random();
+    if (next === finish) score += 220;
+    if (captures) score += captures * 140;
+    if (progress === -1) score += 80;
+    if (next >= pathLength) score += 40 + (next - pathLength) * 18;
+    if (abs >= 0 && safeSpaces.includes(abs)) score += 18;
+    return score;
+  }
+
+  function cpuRoll() {
+    cpuTimer = 0;
+    if (!state?.running || state.turn !== CPU || state.die > 0) return;
+    roll(true);
+  }
+
+  function cpuMove() {
+    cpuTimer = 0;
+    if (!state?.running || state.turn !== CPU || state.die <= 0) return;
+    const moves = movablePawns(CPU);
+    if (!moves.length) {
+      advanceTurn(false);
+      return;
+    }
+    const scored = moves.map(({ index }) => ({ index, score: scorePawn(CPU, index, state.die) }));
+    const bestScore = Math.max(...scored.map((entry) => entry.score));
+    const options = scored.filter((entry) => entry.score === bestScore);
+    movePawn(choice(options).index, true);
+  }
+
+  function movePawn(index, fromCpu = false) {
     if (!state?.running || state.die <= 0) return;
+    if ((!fromCpu && state.turn !== HUMAN) || (fromCpu && state.turn !== CPU)) return;
     const progress = state.pawns[state.turn][index];
-    if (progress === -1 && state.die !== 6) return;
-    const next = progress === -1 ? 0 : progress + state.die;
+    if (!movablePawns(state.turn).some((move) => move.index === index)) return;
+    const next = nextProgress(progress, state.die);
     if (next > finish) return;
-    state.pawns[state.turn][index] = next;
+    const mover = state.turn;
+    const moverLabel = playerById(mover).label;
+    state.pawns[mover][index] = next;
+    let captures = 0;
     if (next < pathLength) {
-      const abs = absolutePosition(state.turn, next);
-      const enemy = state.turn === "red" ? "gold" : "red";
-      if (![0, 12].includes(abs)) {
+      const abs = absolutePosition(mover, next);
+      const enemy = enemyId(mover);
+      if (!safeSpaces.includes(abs)) {
         state.pawns[enemy] = state.pawns[enemy].map((value) =>
-          value >= 0 && value < pathLength && absolutePosition(enemy, value) === abs ? -1 : value
+          value >= 0 && value < pathLength && absolutePosition(enemy, value) === abs ? (captures += 1, -1) : value
         );
       }
     }
     state.moves += 1;
-    api.sound("move");
-    if (state.pawns[state.turn].every((value) => value === finish)) {
-      state.running = false;
-      state.note = `${playerById(state.turn).label} wins the race.`;
-      incrementWinBest(api);
-      api.sound("level");
-      render();
+    api.sound(captures ? "lock" : "slide");
+    if (state.pawns[mover].every((value) => value === finish)) {
+      finishRound(mover);
       return;
     }
     const extra = state.die === 6;
-    switchTurn(extra);
+    let summary = "";
+    if (captures) summary = `${moverLabel} capture${mover === HUMAN ? "" : "s"} a pawn.`;
+    else if (next === finish) summary = `${moverLabel} sends a pawn home.`;
+    advanceTurn(extra, summary);
   }
 
   api.setPrimary("Start", start);
   api.setSecondary("", null);
   api.setCurrent(0);
   return {
-    destroy() {}
+    onKey(event) {
+      if (!state?.running || state.turn !== HUMAN) return;
+      if ((event.key === " " || event.key === "Enter") && state.die === 0) {
+        event.preventDefault();
+        roll();
+        return;
+      }
+      const pawnIndex = Number(event.key) - 1;
+      if (Number.isInteger(pawnIndex) && pawnIndex >= 0 && pawnIndex < 2 && state.die > 0) {
+        event.preventDefault();
+        movePawn(pawnIndex);
+      }
+    },
+    destroy() {
+      clearTimeout(cpuTimer);
+    }
   };
 }
 
