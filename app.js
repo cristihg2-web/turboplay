@@ -2703,11 +2703,11 @@ function createLaneSplit(root, api) {
 
   function roadMetrics(y) {
     const depth = clamp((y - road.horizon) / (height - road.horizon), 0, 1);
-    const roadWidth = 92 + depth * 210;
+    const roadWidth = 82 + depth * 182;
     const lookAhead = game.score + depth * 1480;
     const curveStrength = roadCurve(lookAhead);
-    const bend = curveStrength * depth * (30 + depth * 46);
-    const maxShift = Math.max(0, width / 2 - roadWidth / 2 - 10);
+    const bend = curveStrength * depth * (38 + depth * 54);
+    const maxShift = Math.max(20, width / 2 - roadWidth / 2 + 34);
     const center = width / 2 + clamp(bend, -maxShift, maxShift);
     const laneWidth = roadWidth / 3;
 
@@ -2728,8 +2728,9 @@ function createLaneSplit(root, api) {
   function playerLaneCenter() {
     const metrics = roadMetrics(height - 114);
     const baseCenter = width / 2;
-    const laneOffset = (game.lanePosition - 1) * (metrics.laneWidth * 0.72);
-    const roadDrift = (metrics.left + metrics.laneWidth * 1.5 - baseCenter) * 0.24;
+    const laneSpacing = 34 + metrics.laneWidth * 0.22;
+    const laneOffset = (game.lanePosition - 1) * laneSpacing;
+    const roadDrift = (metrics.left + metrics.laneWidth * 1.5 - baseCenter) * 0.12;
     return clamp(baseCenter + laneOffset + roadDrift, 54, width - 54);
   }
 
@@ -2837,6 +2838,7 @@ function createLaneSplit(root, api) {
   }
 
   function drawRoadScene() {
+    const horizonShift = roadCurve(game.score + 320) * 24;
     const sky = ctx.createLinearGradient(0, 0, 0, road.horizon + 80);
     sky.addColorStop(0, "#10204f");
     sky.addColorStop(0.45, "#243a7a");
@@ -2848,24 +2850,24 @@ function createLaneSplit(root, api) {
     const sunY = road.horizon - 18;
     ctx.fillStyle = "#ffd56c";
     ctx.beginPath();
-    ctx.arc(width / 2, sunY, 34, 0, Math.PI * 2);
+    ctx.arc(width / 2 + horizonShift, sunY, 34, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.strokeStyle = "rgba(255, 165, 86, 0.5)";
     ctx.lineWidth = 3;
     for (let line = -22; line <= 22; line += 10) {
       ctx.beginPath();
-      ctx.moveTo(width / 2 - 30, sunY + line);
-      ctx.lineTo(width / 2 + 30, sunY + line);
+      ctx.moveTo(width / 2 + horizonShift - 30, sunY + line);
+      ctx.lineTo(width / 2 + horizonShift + 30, sunY + line);
       ctx.stroke();
     }
 
     ctx.strokeStyle = "rgba(110, 198, 255, 0.16)";
     ctx.lineWidth = 1;
     for (let index = -6; index <= 6; index += 1) {
-      const x = width / 2 + index * 18;
+      const x = width / 2 + horizonShift + index * 18;
       ctx.beginPath();
-      ctx.moveTo(width / 2, road.horizon + 6);
+      ctx.moveTo(width / 2 + horizonShift, road.horizon + 6);
       ctx.lineTo(x, road.horizon + 72);
       ctx.stroke();
     }
@@ -2873,11 +2875,11 @@ function createLaneSplit(root, api) {
     drawQuad(
       [
         [0, road.horizon + 10],
-        [48, road.horizon - 20],
-        [108, road.horizon + 12],
-        [166, road.horizon - 8],
-        [220, road.horizon + 18],
-        [272, road.horizon - 14],
+        [48 + horizonShift * 0.42, road.horizon - 20],
+        [108 + horizonShift * 0.52, road.horizon + 12],
+        [166 + horizonShift * 0.64, road.horizon - 8],
+        [220 + horizonShift * 0.76, road.horizon + 18],
+        [272 + horizonShift * 0.88, road.horizon - 14],
         [width, road.horizon + 14],
         [width, road.horizon + 64],
         [0, road.horizon + 64]
@@ -2888,10 +2890,10 @@ function createLaneSplit(root, api) {
     drawQuad(
       [
         [0, road.horizon + 26],
-        [84, road.horizon + 10],
-        [142, road.horizon + 34],
-        [194, road.horizon + 8],
-        [250, road.horizon + 30],
+        [84 + horizonShift * 0.28, road.horizon + 10],
+        [142 + horizonShift * 0.36, road.horizon + 34],
+        [194 + horizonShift * 0.44, road.horizon + 8],
+        [250 + horizonShift * 0.52, road.horizon + 30],
         [width, road.horizon + 18],
         [width, height],
         [0, height]
@@ -3188,7 +3190,7 @@ function createLaneSplit(root, api) {
     const distanceGain = (delta / 1000) * 96;
     game.score += distanceGain;
     game.spawnTimer += delta;
-    game.lanePosition += (game.lane - game.lanePosition) * Math.min(1, delta * 0.012);
+    game.lanePosition += (game.lane - game.lanePosition) * Math.min(1, delta * 0.018);
     game.shake = Math.max(0, game.shake - (delta / 1000) * 1.4);
 
     const level = Math.floor(game.score / 2000);
