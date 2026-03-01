@@ -4775,6 +4775,8 @@ function createSolitaire(root, api) {
   const foundationsNode = stage.querySelector("[data-sol-foundations]");
   const tableauNode = stage.querySelector("[data-sol-tableau]");
   const noteValue = stage.querySelector("[data-sol-note]");
+  const doc = root.ownerDocument;
+  const view = doc.defaultView || window;
 
   const foundationButtons = Array.from({ length: FOUNDATION_COUNT }, (_, index) => {
     const button = document.createElement("button");
@@ -4809,6 +4811,18 @@ function createSolitaire(root, api) {
     foundations: Array.from({ length: FOUNDATION_COUNT }, () => []),
     tableaus: Array.from({ length: TABLEAU_COUNT }, () => []),
     selection: null
+  };
+  const drag = {
+    pointerId: null,
+    source: null,
+    originNode: null,
+    preview: null,
+    started: false,
+    hover: null,
+    offsetX: 0,
+    offsetY: 0,
+    startX: 0,
+    startY: 0
   };
 
   function rankLabel(rank) {
@@ -4870,7 +4884,7 @@ function createSolitaire(root, api) {
   function syncScore() {
     stockCountValue.textContent = String(game.stock.length);
     wasteCountValue.textContent = String(game.waste.length);
-    modeValue.textContent = game.selection ? "Move" : "Select";
+    modeValue.textContent = drag.started ? "Drag" : game.selection ? "Move" : "Select";
     const total = foundationTotal();
     api.setCurrent(total);
     api.updateBest(total);
@@ -4920,13 +4934,13 @@ function createSolitaire(root, api) {
     return game.selection.column === nextSelection.column && game.selection.cardIndex === nextSelection.cardIndex;
   }
 
-  function currentSelectionCards() {
-    if (!game.selection) return [];
-    if (game.selection.type === "waste") {
+  function currentSelectionCards(selection = game.selection) {
+    if (!selection) return [];
+    if (selection.type === "waste") {
       const top = game.waste[game.waste.length - 1];
       return top ? [top] : [];
     }
-    return game.tableaus[game.selection.column].slice(game.selection.cardIndex);
+    return game.tableaus[selection.column].slice(selection.cardIndex);
   }
 
   function canMoveToFoundation(card, foundationIndex) {
@@ -4944,13 +4958,25 @@ function createSolitaire(root, api) {
     return top.color !== card.color && top.rank === card.rank + 1;
   }
 
-  function takeSelection() {
-    if (!game.selection) return [];
-    if (game.selection.type === "waste") {
+  function findFoundationTarget(selection = game.selection) {
+    const cards = currentSelectionCards(selection);
+    if (cards.length !== 1) return -1;
+    const [card] = cards;
+    for (let foundationIndex = 0; foundationIndex < FOUNDATION_COUNT; foundationIndex += 1) {
+      if (canMoveToFoundation(card, foundationIndex)) {
+        return foundationIndex;
+      }
+    }
+    return -1;
+  }
+
+  function takeSelection(selection = game.selection) {
+    if (!selection) return [];
+    if (selection.type === "waste") {
       const card = game.waste.pop();
       return card ? [card] : [];
     }
-    return game.tableaus[game.selection.column].splice(game.selection.cardIndex);
+    return game.tableaus[selection.column].splice(selection.cardIndex);
   }
 
   function finishMove(message) {
@@ -5044,6 +5070,14 @@ function createSolitaire(root, api) {
     }
 
     const nextSelection = { type: "waste" };
+    if (!game.selection) {
+      const foundationIndex = findFoundationTarget(nextSelection);
+      if (foundationIndex !== -1) {
+        game.selection = nextSelection;
+        moveSelectionToFoundation(foundationIndex);
+        return;
+      }
+    }
     if (isSameSelection(nextSelection)) {
       clearSelection();
       render();
@@ -5069,12 +5103,21 @@ function createSolitaire(root, api) {
     if (!game.running) return;
     const card = game.tableaus[columnIndex][cardIndex];
     if (!card?.faceUp) return;
+    const nextSelection = { type: "tableau", column: columnIndex, cardIndex };
 
     if (game.selection && moveSelectionToTableau(columnIndex)) {
       return;
     }
 
-    const nextSelection = { type: "tableau", column: columnIndex, cardIndex };
+    if (!game.selection && cardIndex === game.tableaus[columnIndex].length - 1) {
+      const foundationIndex = findFoundationTarget(nextSelection);
+      if (foundationIndex !== -1) {
+        game.selection = nextSelection;
+        moveSelectionToFoundation(foundationIndex);
+        return;
+      }
+    }
+
     if (isSameSelection(nextSelection)) {
       clearSelection();
       render();
@@ -5145,10 +5188,231 @@ function createSolitaire(root, api) {
     updateNote("Auto-home played the available cards.");
   }
 
+  function sameHover(a, b) {
+    return Boolean(a && b && a.kind === b.kind && a.index === b.index);
+  }
+
+  function setDragHover(nextHover) {
+    if (sameHover(drag.hover, nextHover)) return;
+
+    if (drag.hover) {
+      if (drag.hover.kind === "foundation") {
+        foundationButtons[drag.hover.index]?.classList.remove("is-drop-target");
+      } else {
+        tableauColumns[drag.hover.index]?.classList.remove("is-drop-target");
+      }
+    }
+
+    drag.hover = nextHover;
+
+    if (drag.hover) {
+      if (drag.hover.kind === "foundation") {
+        foundationButtons[drag.hover.index]?.classList.add("is-drop-target");
+      } else {
+        tableauColumns[drag.hover.index]?.classList.add("is-drop-target");
+      }
+    }
+  }
+
+  function buildDragPreview(selection) {
+    const cards = currentSelectionCards(selection).slice(0, 5);
+    const preview = doc.createElement("div");
+    preview.className = "sol-drag-preview";
+    preview.style.height = `${108 + Math.max(0, cards.length - 1) * 20}px`;
+
+    cards.forEach((card, index) => {
+      const node = doc.createElement("div");
+      node.className = `sol-card sol-drag-card${card.color === "red" ? " is-red" : ""}`;
+      node.innerHTML = buildCardMarkup(card, false);
+      node.style.top = `${index * 20}px`;
+      preview.appendChild(node);
+    });
+
+    if (currentSelectionCards(selection).length > cards.length) {
+      const badge = doc.createElement("span");
+      badge.className = "sol-drag-badge";
+      badge.textContent = `+${currentSelectionCards(selection).length - cards.length}`;
+      preview.appendChild(badge);
+    }
+
+    doc.body.appendChild(preview);
+    return preview;
+  }
+
+  function findDropTarget(clientX, clientY) {
+    const element = doc.elementFromPoint(clientX, clientY);
+    if (!element) return null;
+
+    const foundation = element.closest("[data-foundation]");
+    if (foundation && foundationsNode.contains(foundation)) {
+      return {
+        kind: "foundation",
+        index: Number(foundation.dataset.foundation)
+      };
+    }
+
+    const column = element.closest("[data-column]");
+    if (column && tableauNode.contains(column)) {
+      return {
+        kind: "tableau",
+        index: Number(column.dataset.column)
+      };
+    }
+
+    return null;
+  }
+
+  function updateDragPreview(clientX, clientY) {
+    if (!drag.preview) return;
+    drag.preview.style.transform = `translate(${clientX - drag.offsetX}px, ${clientY - drag.offsetY}px)`;
+    setDragHover(findDropTarget(clientX, clientY));
+  }
+
+  function removeDragPreview() {
+    if (drag.preview) {
+      drag.preview.remove();
+      drag.preview = null;
+    }
+  }
+
+  function clearDragState() {
+    setDragHover(null);
+    removeDragPreview();
+    stage.classList.remove("is-dragging");
+    drag.pointerId = null;
+    drag.source = null;
+    drag.originNode = null;
+    drag.started = false;
+    drag.offsetX = 0;
+    drag.offsetY = 0;
+    drag.startX = 0;
+    drag.startY = 0;
+  }
+
+  function unbindDragEvents() {
+    view.removeEventListener("pointermove", handleDragMove);
+    view.removeEventListener("pointerup", handleDragEnd);
+    view.removeEventListener("pointercancel", handleDragCancel);
+  }
+
+  function startDrag() {
+    if (drag.started || !drag.source) return;
+    drag.started = true;
+    game.selection = drag.source;
+    stage.classList.add("is-dragging");
+    render();
+    drag.preview = buildDragPreview(drag.source);
+    updateDragPreview(drag.startX, drag.startY);
+    api.sound("ui");
+    updateNote("Drag the card or stack to a column or foundation.");
+  }
+
+  function completeDrag(clientX, clientY) {
+    const target = findDropTarget(clientX, clientY);
+    const source = drag.source;
+
+    if (!source) return;
+
+    if (!target) {
+      clearSelection();
+      render();
+      updateNote("Move cancelled.");
+      return;
+    }
+
+    if (target.kind === "tableau" && source.type === "tableau" && source.column === target.index) {
+      clearSelection();
+      render();
+      updateNote("Move cancelled.");
+      return;
+    }
+
+    game.selection = source;
+    const moved = target.kind === "foundation"
+      ? moveSelectionToFoundation(target.index)
+      : moveSelectionToTableau(target.index);
+
+    if (!moved) {
+      clearSelection();
+      render();
+      api.sound("deny");
+      updateNote(target.kind === "foundation" ? "That card does not fit the foundation." : "That stack does not fit this column.");
+    }
+  }
+
+  function handleDragMove(event) {
+    if (event.pointerId !== drag.pointerId || !drag.source) return;
+
+    if (!drag.started) {
+      const deltaX = event.clientX - drag.startX;
+      const deltaY = event.clientY - drag.startY;
+      if (Math.hypot(deltaX, deltaY) < 9) return;
+      startDrag();
+    }
+
+    event.preventDefault();
+    updateDragPreview(event.clientX, event.clientY);
+  }
+
+  function finishPointerInteraction(event) {
+    if (event.pointerId !== drag.pointerId) return;
+    unbindDragEvents();
+
+    const source = drag.source;
+    const didDrag = drag.started;
+
+    if (didDrag) {
+      completeDrag(event.clientX, event.clientY);
+    } else if (source) {
+      if (source.type === "waste") {
+        handleWasteTap();
+      } else {
+        handleTableauCardTap(source.column, source.cardIndex);
+      }
+    }
+
+    clearDragState();
+  }
+
+  function handleDragEnd(event) {
+    finishPointerInteraction(event);
+  }
+
+  function handleDragCancel(event) {
+    if (event.pointerId !== drag.pointerId) return;
+    unbindDragEvents();
+    clearSelection();
+    render();
+    clearDragState();
+    updateNote("Move cancelled.");
+  }
+
+  function beginDrag(event, source) {
+    if (!game.running) return;
+    if (source.type === "waste" && !game.waste.length) return;
+    if (source.type === "tableau" && !game.tableaus[source.column]?.[source.cardIndex]?.faceUp) return;
+
+    drag.pointerId = event.pointerId;
+    drag.source = source;
+    drag.originNode = event.currentTarget;
+    drag.startX = event.clientX;
+    drag.startY = event.clientY;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    drag.offsetX = clamp(event.clientX - rect.left, 12, Math.max(12, rect.width - 12));
+    drag.offsetY = clamp(event.clientY - rect.top, 12, Math.max(12, rect.height - 12));
+
+    view.addEventListener("pointermove", handleDragMove, { passive: false });
+    view.addEventListener("pointerup", handleDragEnd);
+    view.addEventListener("pointercancel", handleDragCancel);
+  }
+
   function start() {
     const deck = shuffle(makeDeck());
     game.running = true;
     game.selection = null;
+    unbindDragEvents();
+    clearDragState();
     game.stock = [];
     game.waste = [];
     game.foundations = Array.from({ length: FOUNDATION_COUNT }, () => []);
@@ -5174,6 +5438,7 @@ function createSolitaire(root, api) {
 
   function render() {
     syncScore();
+    stage.classList.toggle("is-dragging", drag.started);
 
     setSlotCard(stockButton, game.stock[game.stock.length - 1], {
       faceDown: true,
@@ -5195,11 +5460,13 @@ function createSolitaire(root, api) {
         className: "sol-slot sol-foundation",
         placeholder: "A"
       });
+      button.classList.toggle("is-drop-target", Boolean(drag.hover?.kind === "foundation" && drag.hover.index === foundationIndex));
       button.setAttribute("aria-label", top ? `Foundation ${foundationIndex + 1}, top ${rankLabel(top.rank)} of ${top.suit}` : `Foundation ${foundationIndex + 1}, empty`);
     });
 
     tableauColumns.forEach((columnNode, columnIndex) => {
       columnNode.innerHTML = "";
+      columnNode.classList.toggle("is-drop-target", Boolean(drag.hover?.kind === "tableau" && drag.hover.index === columnIndex));
       const column = game.tableaus[columnIndex];
       let offset = 0;
 
@@ -5234,7 +5501,7 @@ function createSolitaire(root, api) {
         button.setAttribute("aria-label", card.faceUp ? `${rankLabel(card.rank)} of ${card.suit}` : "Face down card");
         button.addEventListener("pointerdown", (event) => {
           event.preventDefault();
-          handleTableauCardTap(columnIndex, cardIndex);
+          beginDrag(event, { type: "tableau", column: columnIndex, cardIndex });
         });
         columnNode.appendChild(button);
         offset += card.faceUp ? 26 : 14;
@@ -5251,7 +5518,7 @@ function createSolitaire(root, api) {
 
   wasteButton.addEventListener("pointerdown", (event) => {
     event.preventDefault();
-    handleWasteTap();
+    beginDrag(event, { type: "waste" });
   });
 
   syncActions();
@@ -5259,7 +5526,8 @@ function createSolitaire(root, api) {
 
   return {
     destroy() {
-      // No external subscriptions.
+      unbindDragEvents();
+      clearDragState();
     },
     onKey(event) {
       if (event.key.toLowerCase() === "d") {
