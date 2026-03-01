@@ -4618,7 +4618,7 @@ function createMineSweep(root, api) {
 
     cells.forEach((button, index) => {
       const cell = game.board[index];
-      const text = !game.running && !game.started ? "" : cell.flagged ? "F" : cell.revealed && cell.mine ? "*" : cell.revealed && cell.adjacent > 0 ? String(cell.adjacent) : "";
+      const text = !game.running && !game.started ? "" : cell.flagged ? "F" : cell.revealed && cell.mine ? "" : cell.revealed && cell.adjacent > 0 ? String(cell.adjacent) : "";
       button.textContent = text;
       button.className = "sweep-cell";
       button.dataset.value = cell.revealed && !cell.mine ? String(cell.adjacent) : "";
