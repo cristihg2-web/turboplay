@@ -1472,7 +1472,8 @@ button {
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: none;
-  --sol-card-width: 64px;
+  --sol-card-width: 54px;
+  --sol-card-height: 94px;
 }
 
 .solitaire-stage::-webkit-scrollbar {
@@ -1489,7 +1490,7 @@ button {
 .solitaire-foundations {
   display: grid;
   grid-template-columns: repeat(4, var(--sol-card-width));
-  gap: 10px;
+  gap: 8px;
 }
 
 .sol-slot,
@@ -1499,7 +1500,8 @@ button {
   display: grid;
   place-items: center;
   width: var(--sol-card-width);
-  min-height: 108px;
+  min-height: var(--sol-card-height);
+  height: var(--sol-card-height);
   padding: 7px 6px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.11);
@@ -1666,14 +1668,14 @@ button {
 .solitaire-tableau {
   display: grid;
   grid-template-columns: repeat(7, var(--sol-card-width));
-  gap: 8px;
+  gap: 6px;
   min-width: max-content;
 }
 
 .sol-column {
   position: relative;
   min-width: var(--sol-card-width);
-  min-height: 118px;
+  min-height: calc(var(--sol-card-height) + 10px);
   border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
@@ -1686,7 +1688,8 @@ button {
 .sol-card {
   position: absolute;
   left: 0;
-  min-height: 108px;
+  min-height: var(--sol-card-height);
+  height: var(--sol-card-height);
 }
 
 .sol-card.is-face-down {
@@ -1714,7 +1717,8 @@ button {
 
 .sol-empty-column {
   width: 100%;
-  min-height: 108px;
+  min-height: var(--sol-card-height);
+  height: var(--sol-card-height);
   background:
     linear-gradient(180deg, rgba(20, 30, 52, 0.94), rgba(10, 15, 28, 0.98));
   border-style: dashed;
@@ -1738,7 +1742,8 @@ button {
 .sol-drag-card {
   position: absolute;
   left: 0;
-  min-height: 108px;
+  min-height: var(--sol-card-height);
+  height: var(--sol-card-height);
   transform: rotate(-1.2deg);
 }
 
@@ -2493,7 +2498,8 @@ button {
   }
 
   .solitaire-stage {
-    --sol-card-width: 56px;
+    --sol-card-width: 48px;
+    --sol-card-height: 84px;
   }
 
   .solitaire-foundations {
@@ -2539,20 +2545,15 @@ button {
   }
 
   .solitaire-tableau {
-    gap: 7px;
+    gap: 5px;
   }
 
   .sol-column {
-    min-height: 98px;
+    min-height: calc(var(--sol-card-height) + 8px);
   }
 
   .sol-empty-column {
-    min-height: 92px;
     font-size: 1.24rem;
-  }
-
-  .sol-drag-card {
-    min-height: 92px;
   }
 
   .sweep-shell {

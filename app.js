@@ -4748,15 +4748,20 @@ function createSolitaire(root, api) {
   const TABLEAU_COUNT = 7;
   const FOUNDATION_COUNT = 4;
   const COMPLETE_FOUNDATION = 52;
-  const CARD_HEIGHT = 108;
-  const EMPTY_HEIGHT = 118;
-  const FACE_UP_STEP = 24;
-  const FACE_DOWN_STEP = 13;
-  const DRAG_STEP = 20;
-  const COLUMN_FOOT = 82;
+  const viewportWidth = Math.min(root.clientWidth || view.innerWidth || 0, view.innerWidth || Infinity);
+  const compactViewport = viewportWidth <= 520;
+  const CARD_WIDTH = compactViewport ? 48 : 54;
+  const CARD_HEIGHT = compactViewport ? 84 : 94;
+  const EMPTY_HEIGHT = CARD_HEIGHT + 10;
+  const FACE_UP_STEP = compactViewport ? 18 : 21;
+  const FACE_DOWN_STEP = compactViewport ? 10 : 12;
+  const DRAG_STEP = compactViewport ? 16 : 18;
+  const COLUMN_FOOT = compactViewport ? 62 : 70;
 
   const stage = document.createElement("div");
   stage.className = "dom-stage solitaire-stage";
+  stage.style.setProperty("--sol-card-width", `${CARD_WIDTH}px`);
+  stage.style.setProperty("--sol-card-height", `${CARD_HEIGHT}px`);
   stage.innerHTML = `
     <div class="score-row">
       <div class="score-pill">Stock <strong data-sol-stock-count>24</strong></div>
