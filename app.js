@@ -82,6 +82,14 @@ const GAME_DEFS = [
     bestLabel: "Best Match"
   },
   {
+    id: "sweep",
+    name: "Mine Sweep",
+    kicker: "Classic",
+    blurb: "Clear the grid and flag the bombs.",
+    currentLabel: "Safe",
+    bestLabel: "Best Safe"
+  },
+  {
     id: "brick",
     name: "Brick Pop",
     kicker: "Arcade",
@@ -836,6 +844,7 @@ const GAME_CREATORS = {
   lock: createLockPick,
   dice: createPokerDice,
   domino: createDominoes,
+  sweep: createMineSweep,
   brick: createBrickPop,
   orbit: createOrbitMatch
 };
@@ -4315,6 +4324,330 @@ function createDominoes(root, api) {
           event.preventDefault();
           selectPlayerTile(tile.id);
         }
+      }
+    }
+  };
+}
+
+function createMineSweep(root, api) {
+  api.setCurrentLabel("Safe");
+  api.setBestLabel("Best Safe");
+
+  const GRID_SIZE = 9;
+  const MINE_COUNT = 10;
+  const SAFE_TOTAL = GRID_SIZE * GRID_SIZE - MINE_COUNT;
+
+  const stage = document.createElement("div");
+  stage.className = "dom-stage sweep-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Grid <strong>${GRID_SIZE} x ${GRID_SIZE}</strong></div>
+      <div class="score-pill">Mines <strong data-sweep-mines-left>${MINE_COUNT}</strong></div>
+      <div class="score-pill">Mode <strong data-sweep-mode>Reveal</strong></div>
+    </div>
+    <div class="sweep-shell">
+      <div class="sweep-board" data-sweep-board></div>
+    </div>
+    <p class="sweep-note" data-sweep-note>Press Start to arm the field.</p>
+  `;
+  root.appendChild(stage);
+
+  const minesLeftValue = stage.querySelector("[data-sweep-mines-left]");
+  const modeValue = stage.querySelector("[data-sweep-mode]");
+  const boardNode = stage.querySelector("[data-sweep-board]");
+  const noteValue = stage.querySelector("[data-sweep-note]");
+
+  const game = {
+    running: false,
+    started: false,
+    mode: "reveal",
+    board: [],
+    revealed: 0,
+    flags: 0,
+    locked: false
+  };
+
+  const cells = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "sweep-cell";
+    button.dataset.index = String(index);
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      pressCell(index);
+    });
+    boardNode.appendChild(button);
+    return button;
+  });
+
+  function toRow(index) {
+    return Math.floor(index / GRID_SIZE);
+  }
+
+  function toColumn(index) {
+    return index % GRID_SIZE;
+  }
+
+  function inBounds(row, column) {
+    return row >= 0 && row < GRID_SIZE && column >= 0 && column < GRID_SIZE;
+  }
+
+  function neighbors(index) {
+    const row = toRow(index);
+    const column = toColumn(index);
+    const list = [];
+
+    for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+      for (let columnOffset = -1; columnOffset <= 1; columnOffset += 1) {
+        if (rowOffset === 0 && columnOffset === 0) continue;
+        const nextRow = row + rowOffset;
+        const nextColumn = column + columnOffset;
+        if (!inBounds(nextRow, nextColumn)) continue;
+        list.push(nextRow * GRID_SIZE + nextColumn);
+      }
+    }
+
+    return list;
+  }
+
+  function createCells() {
+    return Array.from({ length: GRID_SIZE * GRID_SIZE }, () => ({
+      mine: false,
+      revealed: false,
+      flagged: false,
+      exploded: false,
+      adjacent: 0
+    }));
+  }
+
+  function buildBoard(firstIndex) {
+    const board = createCells();
+    const banned = new Set([firstIndex, ...neighbors(firstIndex)]);
+    const pool = [];
+
+    for (let index = 0; index < board.length; index += 1) {
+      if (!banned.has(index)) pool.push(index);
+    }
+
+    for (let placed = 0; placed < MINE_COUNT; placed += 1) {
+      const pick = randomInt(0, pool.length - 1);
+      const mineIndex = pool.splice(pick, 1)[0];
+      board[mineIndex].mine = true;
+    }
+
+    board.forEach((cell, index) => {
+      if (cell.mine) return;
+      cell.adjacent = neighbors(index).reduce((count, neighborIndex) => count + (board[neighborIndex].mine ? 1 : 0), 0);
+    });
+
+    return board;
+  }
+
+  function updateNote(text) {
+    noteValue.textContent = text;
+  }
+
+  function updateMode() {
+    modeValue.textContent = game.mode === "flag" ? "Flag" : "Reveal";
+  }
+
+  function syncActions() {
+    if (!game.running) {
+      api.setPrimary("Start", start);
+      api.setSecondary("", null);
+      return;
+    }
+
+    api.setPrimary("Restart", start);
+    api.setSecondary(game.mode === "flag" ? "Flag Off" : "Flag On", toggleMode);
+  }
+
+  function syncScore() {
+    api.setCurrent(game.revealed);
+    minesLeftValue.textContent = String(MINE_COUNT - game.flags);
+    updateMode();
+  }
+
+  function setMode(nextMode) {
+    game.mode = nextMode;
+    updateMode();
+    syncActions();
+  }
+
+  function toggleMode() {
+    if (!game.running) return;
+    setMode(game.mode === "flag" ? "reveal" : "flag");
+    api.sound("ui");
+    api.setHint(game.mode === "flag" ? "Flag mode on. Tap cells to mark bombs." : "Reveal mode on. Tap cells to clear.");
+  }
+
+  function revealAllMines() {
+    game.board.forEach((cell) => {
+      if (cell.mine) cell.revealed = true;
+    });
+  }
+
+  function floodReveal(startIndex) {
+    const queue = [startIndex];
+
+    while (queue.length) {
+      const index = queue.shift();
+      const cell = game.board[index];
+      if (!cell || cell.revealed || cell.flagged) continue;
+      cell.revealed = true;
+      game.revealed += 1;
+
+      if (cell.adjacent !== 0) continue;
+
+      neighbors(index).forEach((neighborIndex) => {
+        const neighbor = game.board[neighborIndex];
+        if (!neighbor || neighbor.revealed || neighbor.flagged || neighbor.mine) return;
+        queue.push(neighborIndex);
+      });
+    }
+  }
+
+  function stop(message, soundName = "fail") {
+    game.running = false;
+    game.locked = true;
+    api.updateBest(game.revealed);
+    api.sound(soundName);
+    api.setHint(message);
+    updateNote(message);
+    api.setPrimary("Restart", start);
+    api.setSecondary("", null);
+    render();
+  }
+
+  function checkWin() {
+    if (game.revealed !== SAFE_TOTAL) return false;
+    game.running = false;
+    game.locked = true;
+    api.updateBest(game.revealed);
+    api.sound("level");
+    api.setHint("Board clear. Perfect sweep.");
+    updateNote("Field clear. Restart for another sweep.");
+    api.setPrimary("Restart", start);
+    api.setSecondary("", null);
+    render();
+    return true;
+  }
+
+  function revealCell(index) {
+    if (!game.running) return;
+    if (!game.started) {
+      game.board = buildBoard(index);
+      game.started = true;
+    }
+
+    const cell = game.board[index];
+    if (!cell || cell.revealed || cell.flagged) return;
+
+    if (cell.mine) {
+      cell.exploded = true;
+      revealAllMines();
+      stop("Mine hit. Restart the field.", "crash");
+      return;
+    }
+
+    floodReveal(index);
+    api.sound("collect");
+    api.updateBest(game.revealed);
+    if (!checkWin()) {
+      api.setHint(cell.adjacent === 0 ? "Open lane." : `${cell.adjacent} mine${cell.adjacent === 1 ? "" : "s"} nearby.`);
+      updateNote(game.mode === "flag" ? "Flag mode is still on." : "Reveal safe cells and avoid the mines.");
+      render();
+    }
+  }
+
+  function toggleFlagAt(index) {
+    if (!game.running) return;
+    const cell = game.board[index];
+    if (!cell || cell.revealed) return;
+    if (!cell.flagged && game.flags >= MINE_COUNT) {
+      api.sound("deny");
+      updateNote("All flags are already in use.");
+      return;
+    }
+    cell.flagged = !cell.flagged;
+    game.flags += cell.flagged ? 1 : -1;
+    api.sound(cell.flagged ? "lock" : "slide");
+    api.setHint(cell.flagged ? "Flag planted." : "Flag cleared.");
+    updateNote(cell.flagged ? "Bomb marked." : "Marker removed.");
+    render();
+  }
+
+  function pressCell(index) {
+    if (!game.running || game.locked) return;
+    const cell = game.board[index];
+    if (!cell) return;
+
+    if (game.mode === "flag") {
+      toggleFlagAt(index);
+      return;
+    }
+
+    if (cell.flagged) {
+      api.sound("deny");
+      updateNote("Cell is flagged. Toggle flag mode to remove it.");
+      return;
+    }
+
+    revealCell(index);
+  }
+
+  function start() {
+    api.countPlay();
+    api.sound("start");
+    game.running = true;
+    game.started = false;
+    game.mode = "reveal";
+    game.board = createCells();
+    game.revealed = 0;
+    game.flags = 0;
+    game.locked = false;
+    api.setCurrent(0);
+    api.setHint("First tap is always safe.");
+    updateNote("Reveal cells. Toggle flag mode when you spot a bomb.");
+    syncActions();
+    render();
+  }
+
+  function render() {
+    syncScore();
+
+    cells.forEach((button, index) => {
+      const cell = game.board[index];
+      const text = !game.running && !game.started ? "" : cell.flagged ? "F" : cell.revealed && cell.mine ? "*" : cell.revealed && cell.adjacent > 0 ? String(cell.adjacent) : "";
+      button.textContent = text;
+      button.className = "sweep-cell";
+      button.dataset.value = cell.revealed && !cell.mine ? String(cell.adjacent) : "";
+      button.disabled = !game.running;
+      button.classList.toggle("is-hidden", !cell.revealed && !cell.flagged);
+      button.classList.toggle("is-revealed", cell.revealed);
+      button.classList.toggle("is-flagged", cell.flagged);
+      button.classList.toggle("is-mine", cell.revealed && cell.mine);
+      button.classList.toggle("is-exploded", cell.exploded);
+      button.setAttribute("aria-label", cell.flagged ? `Cell ${index + 1}, flagged` : cell.revealed ? `Cell ${index + 1}, ${cell.mine ? "mine" : `${cell.adjacent} nearby`}` : `Cell ${index + 1}, hidden`);
+    });
+  }
+
+  game.board = createCells();
+  syncActions();
+  render();
+
+  return {
+    destroy() {
+      // No persistent listeners outside the local board buttons.
+    },
+    onKey(event) {
+      if (event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        toggleMode();
+      }
+      if (event.key.toLowerCase() === "r") {
+        event.preventDefault();
+        start();
       }
     }
   };
