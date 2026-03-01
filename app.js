@@ -1585,6 +1585,12 @@ function createCometDestroyer(root, api) {
     { x: 24, y: 348 },
     { x: 36, y: 338 }
   ];
+  const targetBounds = {
+    left: 18,
+    right: width - 10,
+    top: 18,
+    bottom: 248
+  };
 
   const skylineTargets = [
     { x: 42, y: 286 },
@@ -1648,7 +1654,7 @@ function createCometDestroyer(root, api) {
 
   function tubeMuzzle(slotIndex) {
     const slot = batterySlots[slotIndex];
-    return { x: slot.x + 48, y: slot.y - 30 };
+    return { x: slot.x + 42, y: slot.y - 42 };
   }
 
   function updateHud() {
@@ -1722,8 +1728,8 @@ function createCometDestroyer(root, api) {
 
   function fireAt(x, y) {
     game.target = {
-      x: clamp(x, 116, width - 10),
-      y: clamp(y, 66, height - 22),
+      x: clamp(x, targetBounds.left, targetBounds.right),
+      y: clamp(y, targetBounds.top, targetBounds.bottom),
       show: 0.85
     };
 
@@ -1791,7 +1797,7 @@ function createCometDestroyer(root, api) {
     game.target = { x: 240, y: 150, show: 0.55 };
     game.lastTime = performance.now();
     updateHud();
-    api.setHint("Tap the far sky to launch a missile.");
+    api.setHint("Tap anywhere in the sky to launch a missile.");
     api.setPrimary("Restart", start);
     cancelAnimationFrame(game.raf);
     draw();
@@ -1886,30 +1892,30 @@ function createCometDestroyer(root, api) {
 
     drawPolygon(
       [
-        { x: batteryBase.x - 14, y: batteryBase.y + 16 },
-        { x: batteryBase.x + 8, y: batteryBase.y + 2 },
-        { x: batteryBase.x + 54, y: batteryBase.y + 20 },
-        { x: batteryBase.x + 24, y: batteryBase.y + 38 }
+        { x: batteryBase.x - 16, y: batteryBase.y + 18 },
+        { x: batteryBase.x + 4, y: batteryBase.y + 1 },
+        { x: batteryBase.x + 50, y: batteryBase.y + 14 },
+        { x: batteryBase.x + 20, y: batteryBase.y + 38 }
       ],
       "#172338"
     );
 
     drawPolygon(
       [
-        { x: batteryBase.x - 2, y: batteryBase.y + 4 },
-        { x: batteryBase.x + 20, y: batteryBase.y - 12 },
-        { x: batteryBase.x + 70, y: batteryBase.y + 8 },
-        { x: batteryBase.x + 46, y: batteryBase.y + 24 }
+        { x: batteryBase.x - 2, y: batteryBase.y + 5 },
+        { x: batteryBase.x + 16, y: batteryBase.y - 16 },
+        { x: batteryBase.x + 62, y: batteryBase.y + 1 },
+        { x: batteryBase.x + 42, y: batteryBase.y + 25 }
       ],
       "#2e476b"
     );
 
     drawPolygon(
       [
-        { x: batteryBase.x + 2, y: batteryBase.y + 14 },
-        { x: batteryBase.x + 20, y: batteryBase.y + 1 },
-        { x: batteryBase.x + 58, y: batteryBase.y + 16 },
-        { x: batteryBase.x + 42, y: batteryBase.y + 28 }
+        { x: batteryBase.x + 1, y: batteryBase.y + 13 },
+        { x: batteryBase.x + 17, y: batteryBase.y - 2 },
+        { x: batteryBase.x + 54, y: batteryBase.y + 11 },
+        { x: batteryBase.x + 38, y: batteryBase.y + 29 }
       ],
       "#415d86"
     );
@@ -1932,7 +1938,7 @@ function createCometDestroyer(root, api) {
       drawPolygon(
         [
           { x: slot.x, y: slot.y },
-          { x: slot.x + 10, y: slot.y - 8 },
+          { x: slot.x + 9, y: slot.y - 12 },
           { x: muzzle.x + 5, y: muzzle.y + 4 },
           { x: muzzle.x - 7, y: muzzle.y + 12 }
         ],
@@ -1942,7 +1948,7 @@ function createCometDestroyer(root, api) {
       drawPolygon(
         [
           { x: slot.x + 2, y: slot.y + 2 },
-          { x: slot.x + 10, y: slot.y - 4 },
+          { x: slot.x + 10, y: slot.y - 8 },
           { x: muzzle.x - 2, y: muzzle.y + 7 },
           { x: muzzle.x - 11, y: muzzle.y + 13 }
         ],
@@ -1951,10 +1957,10 @@ function createCometDestroyer(root, api) {
 
       drawPolygon(
         [
-          { x: slot.x + 6, y: slot.y + 1 },
-          { x: slot.x + 14, y: slot.y - 4 },
-          { x: slot.x + 27, y: slot.y - 12 },
-          { x: slot.x + 23, y: slot.y - 6 }
+          { x: slot.x + 6, y: slot.y - 1 },
+          { x: slot.x + 14, y: slot.y - 7 },
+          { x: slot.x + 26, y: slot.y - 17 },
+          { x: slot.x + 22, y: slot.y - 10 }
         ],
         game.missiles[index].reload <= 0 ? "#ff6c83" : "#273548"
       );
@@ -1979,10 +1985,10 @@ function createCometDestroyer(root, api) {
 
     drawPolygon(
       [
-        { x: batteryBase.x + 18, y: batteryBase.y - 2 },
-        { x: batteryBase.x + 28, y: batteryBase.y - 9 },
-        { x: batteryBase.x + 34, y: batteryBase.y - 5 },
-        { x: batteryBase.x + 24, y: batteryBase.y + 2 }
+        { x: batteryBase.x + 15, y: batteryBase.y - 4 },
+        { x: batteryBase.x + 26, y: batteryBase.y - 15 },
+        { x: batteryBase.x + 33, y: batteryBase.y - 10 },
+        { x: batteryBase.x + 22, y: batteryBase.y + 1 }
       ],
       "#f4c554"
     );
@@ -1990,8 +1996,8 @@ function createCometDestroyer(root, api) {
     ctx.strokeStyle = "rgba(255,255,255,0.16)";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(batteryBase.x + 2, batteryBase.y + 10);
-    ctx.lineTo(batteryBase.x + 40, batteryBase.y + 24);
+    ctx.moveTo(batteryBase.x + 2, batteryBase.y + 12);
+    ctx.lineTo(batteryBase.x + 36, batteryBase.y + 22);
     ctx.stroke();
   }
 
@@ -2226,7 +2232,7 @@ function createCometDestroyer(root, api) {
 
   api.setPrimary("Start", start);
   updateHud();
-  api.setHint("Tap the far sky to launch a missile.");
+  api.setHint("Tap anywhere in the sky to launch a missile.");
   draw();
 
   return {
