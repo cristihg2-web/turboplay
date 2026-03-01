@@ -4748,6 +4748,8 @@ function createSolitaire(root, api) {
   const TABLEAU_COUNT = 7;
   const FOUNDATION_COUNT = 4;
   const COMPLETE_FOUNDATION = 52;
+  const doc = root.ownerDocument;
+  const view = doc.defaultView || window;
   const viewportWidth = Math.min(root.clientWidth || view.innerWidth || 0, view.innerWidth || Infinity);
   const compactViewport = viewportWidth <= 520;
   const CARD_WIDTH = compactViewport ? 48 : 54;
@@ -4786,8 +4788,6 @@ function createSolitaire(root, api) {
   const foundationsNode = stage.querySelector("[data-sol-foundations]");
   const tableauNode = stage.querySelector("[data-sol-tableau]");
   const noteValue = stage.querySelector("[data-sol-note]");
-  const doc = root.ownerDocument;
-  const view = doc.defaultView || window;
 
   const foundationButtons = Array.from({ length: FOUNDATION_COUNT }, (_, index) => {
     const button = document.createElement("button");
