@@ -1480,7 +1480,7 @@ button {
 
 .solitaire-top {
   display: grid;
-  grid-template-columns: 76px 76px minmax(320px, 1fr);
+  grid-template-columns: 68px 68px minmax(288px, 1fr);
   gap: 10px;
   min-width: max-content;
 }
@@ -1498,16 +1498,16 @@ button {
   display: grid;
   place-items: center;
   width: 100%;
-  min-height: 108px;
-  padding: 8px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  min-height: 96px;
+  padding: 7px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
   background:
-    linear-gradient(180deg, #fffefb 0%, #eef3fb 78%, #d9e2ee 100%);
+    linear-gradient(180deg, #fffefa 0%, #f4f7fc 62%, #e1e8f1 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 -12px 18px rgba(12, 20, 36, 0.08),
-    0 10px 22px rgba(0, 0, 0, 0.16);
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -8px 14px rgba(12, 20, 36, 0.06),
+    0 8px 18px rgba(0, 0, 0, 0.14);
   transition:
     transform 0.16s ease,
     border-color 0.16s ease,
@@ -1528,7 +1528,7 @@ button {
 }
 
 .sol-slot {
-  aspect-ratio: 0.72;
+  aspect-ratio: 0.68;
   min-width: 0;
 }
 
@@ -1553,10 +1553,10 @@ button {
   transform: translateY(-3px);
   border-color: rgba(255, 191, 71, 0.42);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 -12px 18px rgba(12, 20, 36, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -8px 14px rgba(12, 20, 36, 0.06),
     0 0 0 1px rgba(255, 191, 71, 0.16),
-    0 14px 24px rgba(255, 191, 71, 0.16);
+    0 12px 20px rgba(255, 191, 71, 0.14);
 }
 
 .sol-foundation.is-drop-target,
@@ -1590,29 +1590,29 @@ button {
 
 .sol-card-back {
   position: absolute;
-  inset: 8px;
-  border-radius: 12px;
+  inset: 7px;
+  border-radius: 10px;
   background:
-    linear-gradient(135deg, rgba(94, 225, 255, 0.1), rgba(255, 191, 71, 0.08)),
+    linear-gradient(135deg, rgba(94, 225, 255, 0.08), rgba(255, 191, 71, 0.06)),
     repeating-linear-gradient(
       45deg,
-      rgba(255, 255, 255, 0.04) 0 6px,
-      rgba(10, 16, 30, 0.16) 6px 12px
+      rgba(255, 255, 255, 0.035) 0 5px,
+      rgba(10, 16, 30, 0.14) 5px 10px
     ),
     linear-gradient(180deg, rgba(20, 30, 52, 0.98), rgba(9, 14, 28, 1));
   border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-    inset 0 -10px 16px rgba(0, 0, 0, 0.24);
+    inset 0 -8px 12px rgba(0, 0, 0, 0.22);
 }
 
 .sol-slot .sol-card-back {
-  inset: 7px;
+  inset: 6px;
 }
 
 .sol-card-corner {
   position: absolute;
-  left: 9px;
+  left: 8px;
   display: grid;
   gap: 1px;
   justify-items: center;
@@ -1621,36 +1621,36 @@ button {
 }
 
 .sol-card-corner.is-top {
-  top: 8px;
+  top: 6px;
 }
 
 .sol-card-corner.is-bottom {
-  right: 9px;
+  right: 8px;
   left: auto;
-  bottom: 8px;
+  bottom: 6px;
   transform: rotate(180deg);
 }
 
 .sol-card-corner strong {
-  font-size: 1.24rem;
+  font-size: 1.08rem;
   font-weight: 800;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
 }
 
 .sol-card-corner em {
-  font-size: 0.9rem;
+  font-size: 0.76rem;
   font-style: normal;
 }
 
 .sol-card-center {
-  font-size: 2.3rem;
+  font-size: 2rem;
   line-height: 1;
-  transform: translateY(3px);
-  text-shadow: 0 4px 10px rgba(18, 30, 54, 0.08);
+  transform: translateY(2px);
+  text-shadow: 0 3px 8px rgba(18, 30, 54, 0.08);
 }
 
 .sol-slot .sol-card-center {
-  font-size: 2rem;
+  font-size: 1.72rem;
 }
 
 .sol-stock.is-empty .sol-slot-mark {
@@ -1663,15 +1663,15 @@ button {
 
 .solitaire-tableau {
   display: grid;
-  grid-template-columns: repeat(7, minmax(72px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(7, minmax(66px, 1fr));
+  gap: 8px;
   min-width: max-content;
 }
 
 .sol-column {
   position: relative;
-  min-width: 72px;
-  min-height: 118px;
+  min-width: 66px;
+  min-height: 104px;
   border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
@@ -1684,7 +1684,7 @@ button {
 .sol-card {
   position: absolute;
   left: 0;
-  min-height: 108px;
+  min-height: 96px;
 }
 
 .sol-card.is-face-down {
@@ -1693,15 +1693,15 @@ button {
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    inset 0 -12px 18px rgba(0, 0, 0, 0.24),
-    0 8px 14px rgba(0, 0, 0, 0.16);
+    inset 0 -8px 14px rgba(0, 0, 0, 0.22),
+    0 6px 12px rgba(0, 0, 0, 0.14);
 }
 
 .sol-card.is-selected-stack:not(.is-selected) {
   border-color: rgba(255, 191, 71, 0.2);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 -12px 18px rgba(12, 20, 36, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -8px 14px rgba(12, 20, 36, 0.06),
     0 0 0 1px rgba(255, 191, 71, 0.08);
 }
 
@@ -1712,14 +1712,14 @@ button {
 
 .sol-empty-column {
   width: 100%;
-  min-height: 108px;
+  min-height: 96px;
   background:
     linear-gradient(180deg, rgba(20, 30, 52, 0.94), rgba(10, 15, 28, 0.98));
   border-style: dashed;
   border-color: rgba(255, 191, 71, 0.18);
   color: rgba(255, 191, 71, 0.78);
   font-family: var(--display);
-  font-size: 1.6rem;
+  font-size: 1.44rem;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -1728,18 +1728,18 @@ button {
   position: fixed;
   top: 0;
   left: 0;
-  width: 76px;
+  width: 68px;
   pointer-events: none;
   z-index: 80;
-  filter: drop-shadow(0 20px 28px rgba(0, 0, 0, 0.26));
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.24));
 }
 
 .sol-drag-card {
   position: absolute;
   left: 0;
-  width: 76px;
-  min-height: 108px;
-  transform: rotate(-1.4deg);
+  width: 68px;
+  min-height: 96px;
+  transform: rotate(-1.2deg);
 }
 
 .sol-drag-card:nth-child(2n) {
@@ -2489,7 +2489,7 @@ button {
   }
 
   .solitaire-top {
-    grid-template-columns: 64px 64px minmax(276px, 1fr);
+    grid-template-columns: 58px 58px minmax(252px, 1fr);
     gap: 8px;
   }
 
@@ -2500,63 +2500,63 @@ button {
   .sol-slot,
   .sol-card,
   .sol-empty-column {
-    min-height: 94px;
-    padding: 6px;
-    border-radius: 14px;
+    min-height: 84px;
+    padding: 5px;
+    border-radius: 12px;
   }
 
   .sol-slot .sol-card-back,
   .sol-card .sol-card-back {
-    inset: 6px;
-    border-radius: 10px;
+    inset: 5px;
+    border-radius: 8px;
   }
 
   .sol-card-corner {
-    left: 7px;
+    left: 6px;
   }
 
   .sol-card-corner.is-bottom {
-    right: 7px;
+    right: 6px;
   }
 
   .sol-card-corner strong {
-    font-size: 1.04rem;
+    font-size: 0.96rem;
   }
 
   .sol-card-corner em {
-    font-size: 0.76rem;
+    font-size: 0.68rem;
   }
 
   .sol-card-center {
-    font-size: 1.85rem;
+    font-size: 1.56rem;
   }
 
   .sol-slot .sol-card-center {
-    font-size: 1.66rem;
+    font-size: 1.4rem;
   }
 
   .solitaire-tableau {
-    grid-template-columns: repeat(7, minmax(64px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(7, minmax(58px, 1fr));
+    gap: 7px;
   }
 
   .sol-column {
-    min-width: 64px;
-    min-height: 98px;
+    min-width: 58px;
+    min-height: 90px;
   }
 
   .sol-empty-column {
-    min-height: 94px;
-    font-size: 1.4rem;
+    min-height: 84px;
+    font-size: 1.24rem;
   }
 
   .sol-drag-preview,
   .sol-drag-card {
-    width: 64px;
+    width: 58px;
   }
 
   .sol-drag-card {
-    min-height: 94px;
+    min-height: 84px;
   }
 
   .sweep-shell {

@@ -4748,6 +4748,12 @@ function createSolitaire(root, api) {
   const TABLEAU_COUNT = 7;
   const FOUNDATION_COUNT = 4;
   const COMPLETE_FOUNDATION = 52;
+  const CARD_HEIGHT = 96;
+  const EMPTY_HEIGHT = 104;
+  const FACE_UP_STEP = 22;
+  const FACE_DOWN_STEP = 12;
+  const DRAG_STEP = 18;
+  const COLUMN_FOOT = 74;
 
   const stage = document.createElement("div");
   stage.className = "dom-stage solitaire-stage";
@@ -5218,13 +5224,13 @@ function createSolitaire(root, api) {
     const cards = currentSelectionCards(selection).slice(0, 5);
     const preview = doc.createElement("div");
     preview.className = "sol-drag-preview";
-    preview.style.height = `${108 + Math.max(0, cards.length - 1) * 20}px`;
+    preview.style.height = `${CARD_HEIGHT + Math.max(0, cards.length - 1) * DRAG_STEP}px`;
 
     cards.forEach((card, index) => {
       const node = doc.createElement("div");
       node.className = `sol-card sol-drag-card${card.color === "red" ? " is-red" : ""}`;
       node.innerHTML = buildCardMarkup(card, false);
-      node.style.top = `${index * 20}px`;
+      node.style.top = `${index * DRAG_STEP}px`;
       preview.appendChild(node);
     });
 
@@ -5480,7 +5486,7 @@ function createSolitaire(root, api) {
           handleColumnTap(columnIndex);
         });
         columnNode.appendChild(empty);
-        columnNode.style.height = "118px";
+        columnNode.style.height = `${EMPTY_HEIGHT}px`;
         return;
       }
 
@@ -5504,10 +5510,10 @@ function createSolitaire(root, api) {
           beginDrag(event, { type: "tableau", column: columnIndex, cardIndex });
         });
         columnNode.appendChild(button);
-        offset += card.faceUp ? 26 : 14;
+        offset += card.faceUp ? FACE_UP_STEP : FACE_DOWN_STEP;
       });
 
-      columnNode.style.height = `${offset + 86}px`;
+      columnNode.style.height = `${offset + COLUMN_FOOT}px`;
     });
   }
 
