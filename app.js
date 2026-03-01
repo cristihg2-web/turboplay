@@ -5231,6 +5231,8 @@ function createSolitaire(root, api) {
     preview.className = "sol-drag-preview";
     const originWidth = drag.originNode?.getBoundingClientRect().width || CARD_WIDTH;
     const previewWidth = Math.round(originWidth);
+    preview.style.setProperty("--sol-card-width", `${previewWidth}px`);
+    preview.style.setProperty("--sol-card-height", `${CARD_HEIGHT}px`);
     preview.style.width = `${previewWidth}px`;
     preview.style.height = `${CARD_HEIGHT + Math.max(0, cards.length - 1) * DRAG_STEP}px`;
 
@@ -5239,6 +5241,7 @@ function createSolitaire(root, api) {
       node.className = `sol-card sol-drag-card${card.color === "red" ? " is-red" : ""}`;
       node.innerHTML = buildCardMarkup(card, false);
       node.style.width = `${previewWidth}px`;
+      node.style.height = `${CARD_HEIGHT}px`;
       node.style.top = `${index * DRAG_STEP}px`;
       preview.appendChild(node);
     });
