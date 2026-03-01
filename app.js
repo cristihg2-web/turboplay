@@ -5224,12 +5224,16 @@ function createSolitaire(root, api) {
     const cards = currentSelectionCards(selection).slice(0, 5);
     const preview = doc.createElement("div");
     preview.className = "sol-drag-preview";
+    const originWidth = drag.originNode?.getBoundingClientRect().width || 64;
+    const previewWidth = Math.round(originWidth + 4);
+    preview.style.width = `${previewWidth}px`;
     preview.style.height = `${CARD_HEIGHT + Math.max(0, cards.length - 1) * DRAG_STEP}px`;
 
     cards.forEach((card, index) => {
       const node = doc.createElement("div");
       node.className = `sol-card sol-drag-card${card.color === "red" ? " is-red" : ""}`;
       node.innerHTML = buildCardMarkup(card, false);
+      node.style.width = `${previewWidth}px`;
       node.style.top = `${index * DRAG_STEP}px`;
       preview.appendChild(node);
     });
