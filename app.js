@@ -8199,21 +8199,29 @@ function createBattleship(root, api) {
 
   const size = 6;
   const ships = [3, 2, 2];
+  const fleetLabel = ships.join("-");
   const stage = document.createElement("div");
   stage.className = "board-stage";
   stage.innerHTML = `
     <div class="score-row">
       <div class="score-pill">Mode <strong>Vs CPU</strong></div>
       <div class="score-pill">Grid <strong>6x6</strong></div>
+      <div class="score-pill">Fleet <strong>${fleetLabel} each</strong></div>
     </div>
     <div class="board-shell battle-shell">
       <div class="battle-layout">
         <div class="battle-panel">
-          <h4>Your Sea</h4>
+          <div class="battle-panel-head">
+            <h4>Your Sea</h4>
+            <span class="battle-fleet">${fleetLabel}</span>
+          </div>
           <div class="battle-grid" data-player></div>
         </div>
         <div class="battle-panel">
-          <h4>Enemy Sea</h4>
+          <div class="battle-panel-head">
+            <h4>Enemy Sea</h4>
+            <span class="battle-fleet">${fleetLabel}</span>
+          </div>
           <div class="battle-grid" data-cpu></div>
         </div>
       </div>
@@ -8278,24 +8286,64 @@ function createBattleship(root, api) {
     return board.flat().every((cell) => !cell.ship || cell.hit);
   }
 
+  function shipSegment(board, row, col) {
+    const up = board[row - 1]?.[col]?.ship;
+    const down = board[row + 1]?.[col]?.ship;
+    const left = board[row]?.[col - 1]?.ship;
+    const right = board[row]?.[col + 1]?.ship;
+    if ((left || right) && !(up || down)) {
+      if (!left && !right) return "solo";
+      if (!left) return "h-start";
+      if (!right) return "h-end";
+      return "h-mid";
+    }
+    if (up || down) {
+      if (!up && !down) return "solo";
+      if (!up) return "v-start";
+      if (!down) return "v-end";
+      return "v-mid";
+    }
+    return "solo";
+  }
+
+  function paintCell(cell, board, row, col, revealShips = false) {
+    const slot = board[row][col];
+    cell.className = "battle-cell";
+    cell.innerHTML = "";
+    cell.removeAttribute("data-segment");
+    if (slot.ship && revealShips) {
+      cell.classList.add("has-ship");
+      cell.dataset.segment = shipSegment(board, row, col);
+    }
+    if (slot.hit) {
+      cell.classList.add("is-hit", "is-fired");
+      if (slot.ship && !revealShips) {
+        cell.classList.add("reveals-ship");
+        cell.dataset.segment = shipSegment(board, row, col);
+      }
+      cell.innerHTML = '<span class="battle-mark battle-mark-hit" aria-hidden="true"></span>';
+    } else if (slot.miss) {
+      cell.classList.add("is-miss", "is-fired");
+      cell.innerHTML = '<span class="battle-mark battle-mark-miss" aria-hidden="true"></span>';
+    }
+  }
+
   function render() {
     playerCells.forEach((cell, index) => {
       const row = Math.floor(index / size);
       const col = index % size;
-      const slot = state.player[row][col];
-      cell.className = "battle-cell";
-      if (slot.ship) cell.classList.add("has-ship");
-      if (slot.hit) cell.classList.add("is-hit");
-      if (slot.miss) cell.classList.add("is-miss");
+      paintCell(cell, state.player, row, col, true);
     });
     cpuCells.forEach((cell, index) => {
       const row = Math.floor(index / size);
       const col = index % size;
       const slot = state.cpu[row][col];
-      cell.className = "battle-cell";
-      if (slot.hit) cell.classList.add("is-hit");
-      if (slot.miss) cell.classList.add("is-miss");
+      paintCell(cell, state.cpu, row, col, false);
       cell.disabled = !state.running || slot.hit || slot.miss || !state.playerTurn;
+      cell.setAttribute(
+        "aria-label",
+        slot.hit ? `Enemy cell ${row + 1}, ${col + 1}: hit` : slot.miss ? `Enemy cell ${row + 1}, ${col + 1}: miss` : `Enemy cell ${row + 1}, ${col + 1}`
+      );
     });
     api.setCurrent(state.hits);
     noteNode.textContent = state.note;
