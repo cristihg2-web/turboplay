@@ -149,7 +149,7 @@ const GAME_DEFS = [
     id: "reversi",
     name: "Reversi",
     kicker: "Strategy",
-    blurb: "Flip the field and own the corners.",
+    blurb: "Flip the field and beat the CPU.",
     currentLabel: "Moves",
     bestLabel: "Wins"
   },
@@ -7812,13 +7812,15 @@ function createCheckers(root, api) {
 function createReversi(root, api) {
   api.setCurrentLabel("Moves");
   api.setBestLabel("Wins");
+  const HUMAN = "black";
+  const CPU = "white";
 
   const size = 8;
   const stage = document.createElement("div");
   stage.className = "board-stage";
   stage.innerHTML = `
     <div class="score-row">
-      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Mode <strong>Vs CPU</strong></div>
       <div class="score-pill">Board <strong>8x8</strong></div>
     </div>
     <div class="board-shell">
@@ -7843,49 +7845,137 @@ function createReversi(root, api) {
   });
 
   let state = null;
+  let cpuTimer = 0;
   const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  const corners = [
+    [0, 0], [0, size - 1], [size - 1, 0], [size - 1, size - 1]
+  ];
+  const dangerSquares = [
+    { row: 0, col: 1, corner: [0, 0] },
+    { row: 1, col: 0, corner: [0, 0] },
+    { row: 1, col: 1, corner: [0, 0] },
+    { row: 0, col: size - 2, corner: [0, size - 1] },
+    { row: 1, col: size - 1, corner: [0, size - 1] },
+    { row: 1, col: size - 2, corner: [0, size - 1] },
+    { row: size - 2, col: 0, corner: [size - 1, 0] },
+    { row: size - 1, col: 1, corner: [size - 1, 0] },
+    { row: size - 2, col: 1, corner: [size - 1, 0] },
+    { row: size - 1, col: size - 2, corner: [size - 1, size - 1] },
+    { row: size - 2, col: size - 1, corner: [size - 1, size - 1] },
+    { row: size - 2, col: size - 2, corner: [size - 1, size - 1] }
+  ];
 
   function inBounds(row, col) {
     return row >= 0 && row < size && col >= 0 && col < size;
   }
 
-  function flipsFor(turn, row, col) {
-    if (state.board[row][col]) return [];
+  function other(turn) {
+    return turn === HUMAN ? CPU : HUMAN;
+  }
+
+  function flipsFor(turn, row, col, board = state.board) {
+    if (board[row][col]) return [];
     const enemy = turn === "black" ? "white" : "black";
     const flips = [];
     for (const [dr, dc] of dirs) {
       let r = row + dr;
       let c = col + dc;
       const line = [];
-      while (inBounds(r, c) && state.board[r][c] === enemy) {
+      while (inBounds(r, c) && board[r][c] === enemy) {
         line.push([r, c]);
         r += dr;
         c += dc;
       }
-      if (line.length && inBounds(r, c) && state.board[r][c] === turn) {
+      if (line.length && inBounds(r, c) && board[r][c] === turn) {
         flips.push(...line);
       }
     }
     return flips;
   }
 
-  function validMoves(turn) {
+  function validMoves(turn, board = state.board) {
     const list = [];
     for (let row = 0; row < size; row += 1) {
       for (let col = 0; col < size; col += 1) {
-        const flips = flipsFor(turn, row, col);
+        const flips = flipsFor(turn, row, col, board);
         if (flips.length) list.push({ row, col, flips });
       }
     }
     return list;
   }
 
-  function scoreOf(color) {
-    return state.board.flat().filter((value) => value === color).length;
+  function scoreOf(color, board = state.board) {
+    return board.flat().filter((value) => value === color).length;
+  }
+
+  function applyMove(turn, move, board = state.board) {
+    board[move.row][move.col] = turn;
+    move.flips.forEach(([r, c]) => {
+      board[r][c] = turn;
+    });
+  }
+
+  function cloneBoard(board = state.board) {
+    return board.map((row) => [...row]);
+  }
+
+  function isCorner(row, col) {
+    return corners.some(([cornerRow, cornerCol]) => cornerRow === row && cornerCol === col);
+  }
+
+  function moveScore(move) {
+    let score = move.flips.length * 7;
+    if (isCorner(move.row, move.col)) score += 140;
+    if (move.row === 0 || move.row === size - 1 || move.col === 0 || move.col === size - 1) score += 18;
+
+    const danger = dangerSquares.find((entry) => entry.row === move.row && entry.col === move.col);
+    if (danger && !state.board[danger.corner[0]][danger.corner[1]]) score -= 42;
+
+    const nextBoard = cloneBoard();
+    applyMove(CPU, move, nextBoard);
+    const humanMoves = validMoves(HUMAN, nextBoard);
+    const cpuMoves = validMoves(CPU, nextBoard);
+    score -= humanMoves.length * 4;
+    score += cpuMoves.length * 2;
+    score += scoreOf(CPU, nextBoard) - scoreOf(HUMAN, nextBoard);
+    return score;
+  }
+
+  function pickCpuMove() {
+    const moves = validMoves(CPU);
+    if (!moves.length) return null;
+    const ranked = [...moves].sort((a, b) => moveScore(b) - moveScore(a));
+    const bestScore = moveScore(ranked[0]);
+    return choice(ranked.filter((move) => moveScore(move) === bestScore));
+  }
+
+  function handoff(nextTurn, passText = "") {
+    const nextMoves = validMoves(nextTurn);
+    if (nextMoves.length) {
+      state.turn = nextTurn;
+      state.note = passText || (nextTurn === HUMAN ? "Your move." : "CPU is thinking.");
+      render();
+      if (nextTurn === CPU) {
+        cpuTimer = setTimeout(cpuTurn, 420);
+      }
+      return;
+    }
+
+    const currentMoves = validMoves(state.turn);
+    if (currentMoves.length) {
+      state.note = nextTurn === HUMAN ? "You pass. CPU keeps the turn." : "CPU passes. Your move.";
+      render();
+      if (state.turn === CPU) {
+        cpuTimer = setTimeout(cpuTurn, 420);
+      }
+      return;
+    }
+
+    finish();
   }
 
   function render() {
-    const moves = validMoves(state.turn);
+    const moves = state.running && state.turn === HUMAN ? validMoves(HUMAN) : [];
     cells.forEach((cell, index) => {
       const row = Math.floor(index / size);
       const col = index % size;
@@ -7893,7 +7983,7 @@ function createReversi(root, api) {
       const isMove = moves.some((move) => move.row === row && move.col === col);
       cell.classList.toggle("is-move", isMove);
       cell.innerHTML = piece ? `<span class="reversi-disc is-${piece}"></span>` : isMove ? '<span class="reversi-hint"></span>' : "";
-      cell.disabled = !state.running || !isMove;
+      cell.disabled = !state.running || state.turn !== HUMAN || !isMove;
     });
     api.setCurrent(state.moves);
     noteNode.textContent = `${state.note} Black ${scoreOf("black")} / White ${scoreOf("white")}`;
@@ -7901,64 +7991,70 @@ function createReversi(root, api) {
 
   function finish() {
     state.running = false;
+    clearTimeout(cpuTimer);
     const black = scoreOf("black");
     const white = scoreOf("white");
     if (black === white) {
       state.note = "Draw board.";
       api.sound("round");
-    } else {
-      state.note = `${black > white ? "Black" : "White"} controls the board.`;
+    } else if (black > white) {
+      state.note = "You control the board.";
       incrementWinBest(api);
       api.sound("level");
+    } else {
+      state.note = "CPU controls the board.";
+      api.sound("fail");
     }
     render();
   }
 
   function start() {
+    clearTimeout(cpuTimer);
     state = {
       board: createMatrix(size, size),
-      turn: "black",
+      turn: HUMAN,
       moves: 0,
       running: true,
-      note: "Black opens."
+      note: "Your move. Corners are gold."
     };
-    state.board[3][3] = "white";
-    state.board[3][4] = "black";
-    state.board[4][3] = "black";
-    state.board[4][4] = "white";
+    state.board[3][3] = CPU;
+    state.board[3][4] = HUMAN;
+    state.board[4][3] = HUMAN;
+    state.board[4][4] = CPU;
     api.setPrimary("Restart", start);
     render();
   }
 
-  function play(row, col) {
-    if (!state?.running) return;
-    const flips = flipsFor(state.turn, row, col);
-    if (!flips.length) return;
-    state.board[row][col] = state.turn;
-    flips.forEach(([r, c]) => {
-      state.board[r][c] = state.turn;
-    });
+  function cpuTurn() {
+    cpuTimer = 0;
+    if (!state?.running || state.turn !== CPU) return;
+    const move = pickCpuMove();
+    if (!move) {
+      handoff(HUMAN, "CPU passes. Your move.");
+      return;
+    }
+    applyMove(CPU, move);
     state.moves += 1;
     api.sound("lock");
-    const nextTurn = state.turn === "black" ? "white" : "black";
-    if (validMoves(nextTurn).length) {
-      state.turn = nextTurn;
-      state.note = `${nextTurn === "black" ? "Black" : "White"} to move.`;
-      render();
-      return;
-    }
-    if (validMoves(state.turn).length) {
-      state.note = `${nextTurn === "black" ? "Black" : "White"} passes.`;
-      render();
-      return;
-    }
-    finish();
+    handoff(HUMAN);
+  }
+
+  function play(row, col) {
+    if (!state?.running || state.turn !== HUMAN) return;
+    const flips = flipsFor(HUMAN, row, col);
+    if (!flips.length) return;
+    applyMove(HUMAN, { row, col, flips });
+    state.moves += 1;
+    api.sound("lock");
+    handoff(CPU);
   }
 
   api.setPrimary("Start", start);
   api.setCurrent(0);
   return {
-    destroy() {}
+    destroy() {
+      clearTimeout(cpuTimer);
+    }
   };
 }
 
