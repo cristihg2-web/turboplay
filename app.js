@@ -98,6 +98,78 @@ const GAME_DEFS = [
     bestLabel: "Best Home"
   },
   {
+    id: "checkers",
+    name: "Checkers",
+    kicker: "Board",
+    blurb: "Local draughts on a pocket board.",
+    currentLabel: "Moves",
+    bestLabel: "Wins"
+  },
+  {
+    id: "ludo",
+    name: "Ludo",
+    kicker: "Board",
+    blurb: "Race your pawns home in local play.",
+    currentLabel: "Moves",
+    bestLabel: "Wins"
+  },
+  {
+    id: "connect4",
+    name: "Connect Four",
+    kicker: "Board",
+    blurb: "Drop four in a row before your rival.",
+    currentLabel: "Moves",
+    bestLabel: "Wins"
+  },
+  {
+    id: "battleship",
+    name: "Battleship",
+    kicker: "Strategy",
+    blurb: "Scan the grid and sink the fleet.",
+    currentLabel: "Hits",
+    bestLabel: "Wins"
+  },
+  {
+    id: "hangman",
+    name: "Hangman",
+    kicker: "Word",
+    blurb: "Guess the word before the line goes cold.",
+    currentLabel: "Streak",
+    bestLabel: "Best Streak"
+  },
+  {
+    id: "ttt",
+    name: "Tic-Tac-Toe",
+    kicker: "Board",
+    blurb: "Three in a row, quick local rounds.",
+    currentLabel: "Moves",
+    bestLabel: "Wins"
+  },
+  {
+    id: "reversi",
+    name: "Reversi",
+    kicker: "Strategy",
+    blurb: "Flip the field and own the corners.",
+    currentLabel: "Moves",
+    bestLabel: "Wins"
+  },
+  {
+    id: "slide",
+    name: "Sliding Puzzle",
+    kicker: "Puzzle",
+    blurb: "Rebuild the board tile by tile.",
+    currentLabel: "Moves",
+    bestLabel: "Solves"
+  },
+  {
+    id: "dots",
+    name: "Dots and Boxes",
+    kicker: "Board",
+    blurb: "Draw lines, claim boxes, steal turns.",
+    currentLabel: "Boxes",
+    bestLabel: "Wins"
+  },
+  {
     id: "brick",
     name: "Brick Pop",
     kicker: "Arcade",
@@ -128,6 +200,15 @@ const GAME_PILL_ART = {
   domino: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="5" width="18" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 16h18" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="1.6" fill="currentColor"/><circle cx="20" cy="10" r="1.6" fill="currentColor"/><circle cx="16" cy="21" r="1.6" fill="currentColor"/><circle cx="12" cy="24" r="1.6" fill="currentColor"/><circle cx="20" cy="24" r="1.6" fill="currentColor"/></svg>',
   sweep: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="6" fill="currentColor"/><path d="M16 4v4M16 26v3M4 17h4M24 17h4M7 8l3 3M22 23l3 3M25 8l-3 3M7 26l3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 9c1 0 2-1 2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   solitaire: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="6" width="13" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 12c1.6-2.2 4.8-1.6 4.8.9 0 1.2-.7 2-1.8 2.8l-2.2 1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 20h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="15" y="9" width="10" height="15" rx="3" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="2"/></svg>',
+  checkers: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8h16v16H8z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 8h8v8H8zM16 16h8v8h-8z" fill="currentColor" fill-opacity=".18"/><circle cx="12" cy="20" r="3" fill="currentColor"/><circle cx="20" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  ludo: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.4" fill="currentColor"/><circle cx="20" cy="12" r="2.4" fill="currentColor" fill-opacity=".3"/><circle cx="12" cy="20" r="2.4" fill="currentColor" fill-opacity=".3"/><circle cx="20" cy="20" r="2.4" fill="currentColor"/></svg>',
+  connect4: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="8" width="20" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="14" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="20" cy="14" r="2.2" fill="currentColor" fill-opacity=".24" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="21" r="2.2" fill="currentColor" fill-opacity=".24" stroke="currentColor" stroke-width="2"/><circle cx="20" cy="21" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  battleship: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 20h18l-2 4H9l-2-4Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 20v-6l4-2 4 2v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M5 11h4M23 11h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  hangman: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 26V6h12v4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="20" cy="14" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 17v5M20 19l-3 3M20 19l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  ttt: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 6v20M21 6v20M6 11h20M6 21h20" stroke="currentColor" stroke-width="2"/><circle cx="11" cy="11" r="2.7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M18 18l5 5M23 18l-5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+  reversi: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="13" cy="13" r="3.2" fill="currentColor"/><circle cx="19" cy="13" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="13" cy="19" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="19" cy="19" r="3.2" fill="currentColor"/></svg>',
+  slide: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="6" width="20" height="20" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 16h20M16 6v20" stroke="currentColor" stroke-width="2"/><path d="M21 11l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  dots: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="8" cy="8" r="2" fill="currentColor"/><circle cx="24" cy="8" r="2" fill="currentColor"/><circle cx="8" cy="24" r="2" fill="currentColor"/><circle cx="24" cy="24" r="2" fill="currentColor"/><path d="M10 8h12M24 10v12M10 24h12M8 10v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="12" y="12" width="8" height="8" rx="2" fill="currentColor" fill-opacity=".18"/></svg>',
   brick: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="8" width="22" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8v5M10.5 13h11M10.5 19h11M10 19v5M22 19v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   orbit: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="4" fill="currentColor"/><ellipse cx="16" cy="16" rx="11" ry="6.5" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="16" cy="16" rx="6.5" ry="11" fill="none" stroke="currentColor" stroke-width="2" opacity=".75"/><circle cx="24" cy="12" r="1.6" fill="currentColor"/></svg>'
 };
@@ -926,6 +1007,15 @@ const GAME_CREATORS = {
   domino: createDominoes,
   sweep: createMineSweep,
   solitaire: createSolitaire,
+  checkers: createCheckers,
+  ludo: createLudo,
+  connect4: createConnectFour,
+  battleship: createBattleship,
+  hangman: createHangman,
+  ttt: createTicTacToe,
+  reversi: createReversi,
+  slide: createSlidingPuzzle,
+  dots: createDotsAndBoxes,
   brick: createBrickPop,
   orbit: createOrbitMatch
 };
@@ -6697,6 +6787,1445 @@ function createOrbitMatch(root, api) {
     destroy() {
       cancelAnimationFrame(game.raf);
     }
+  };
+}
+
+function incrementWinBest(api) {
+  api.updateBest((api.getBest() || 0) + 1);
+}
+
+function createMatrix(rows, cols, factory = () => null) {
+  return Array.from({ length: rows }, (_, rowIndex) =>
+    Array.from({ length: cols }, (_, colIndex) => factory(rowIndex, colIndex))
+  );
+}
+
+function createTicTacToe(root, api) {
+  api.setCurrentLabel("Moves");
+  api.setBestLabel("Wins");
+
+  const stage = document.createElement("div");
+  stage.className = "board-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Board <strong>3x3</strong></div>
+    </div>
+    <div class="board-shell">
+      <div class="ttt-grid" data-grid></div>
+      <p class="board-note" data-note>Press Start for a new round.</p>
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const gridNode = stage.querySelector("[data-grid]");
+  const noteNode = stage.querySelector("[data-note]");
+  const cells = Array.from({ length: 9 }, (_, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "ttt-cell";
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      play(index);
+    });
+    gridNode.appendChild(button);
+    return button;
+  });
+
+  let state = null;
+  const lines = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
+  ];
+
+  function winner(board) {
+    for (const line of lines) {
+      const [a, b, c] = line;
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+        return { mark: board[a], line };
+      }
+    }
+    return null;
+  }
+
+  function render() {
+    cells.forEach((cell, index) => {
+      const mark = state.board[index];
+      cell.textContent = mark || "";
+      cell.dataset.mark = mark || "";
+      cell.disabled = !state.running || Boolean(mark);
+      cell.classList.toggle("is-win", Boolean(state.winLine?.includes(index)));
+    });
+    api.setCurrent(state.moves);
+    noteNode.textContent = state.note;
+  }
+
+  function start() {
+    state = {
+      board: Array(9).fill(""),
+      turn: "X",
+      moves: 0,
+      running: true,
+      winLine: null,
+      note: "X to move."
+    };
+    api.setPrimary("Restart", start);
+    render();
+  }
+
+  function play(index) {
+    if (!state?.running || state.board[index]) return;
+    state.board[index] = state.turn;
+    state.moves += 1;
+    api.sound("ui");
+    const win = winner(state.board);
+    if (win) {
+      state.running = false;
+      state.winLine = win.line;
+      state.note = `${win.mark} wins the round.`;
+      incrementWinBest(api);
+      api.sound("level");
+      render();
+      return;
+    }
+    if (state.moves === 9) {
+      state.running = false;
+      state.note = "Draw board. Restart for another round.";
+      api.sound("round");
+      render();
+      return;
+    }
+    state.turn = state.turn === "X" ? "O" : "X";
+    state.note = `${state.turn} to move.`;
+    render();
+  }
+
+  api.setPrimary("Start", start);
+  api.setCurrent(0);
+  return {
+    onKey(event) {
+      const value = Number(event.key) - 1;
+      if (Number.isInteger(value) && value >= 0 && value < 9) {
+        event.preventDefault();
+        play(value);
+      }
+    },
+    destroy() {}
+  };
+}
+
+function createConnectFour(root, api) {
+  api.setCurrentLabel("Moves");
+  api.setBestLabel("Wins");
+
+  const ROWS = 6;
+  const COLS = 7;
+  const stage = document.createElement("div");
+  stage.className = "board-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Grid <strong>7x6</strong></div>
+    </div>
+    <div class="board-shell">
+      <div class="connect-controls" data-controls></div>
+      <div class="connect-grid" data-grid></div>
+      <p class="board-note" data-note>Press Start to begin.</p>
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const controlsNode = stage.querySelector("[data-controls]");
+  const gridNode = stage.querySelector("[data-grid]");
+  const noteNode = stage.querySelector("[data-note]");
+
+  const dropButtons = Array.from({ length: COLS }, (_, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "connect-drop";
+    button.textContent = `${index + 1}`;
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      drop(index);
+    });
+    controlsNode.appendChild(button);
+    return button;
+  });
+
+  const cells = Array.from({ length: ROWS * COLS }, () => {
+    const cell = document.createElement("div");
+    cell.className = "connect-cell";
+    cell.innerHTML = '<span class="connect-disc"></span>';
+    gridNode.appendChild(cell);
+    return cell;
+  });
+
+  let state = null;
+
+  function getCell(row, col) {
+    return state.board[row][col];
+  }
+
+  function setNote(text) {
+    noteNode.textContent = text;
+  }
+
+  function checkWin(row, col, color) {
+    const dirs = [
+      [[0, 1], [0, -1]],
+      [[1, 0], [-1, 0]],
+      [[1, 1], [-1, -1]],
+      [[1, -1], [-1, 1]]
+    ];
+    for (const pair of dirs) {
+      let count = 1;
+      for (const [dr, dc] of pair) {
+        let r = row + dr;
+        let c = col + dc;
+        while (r >= 0 && r < ROWS && c >= 0 && c < COLS && getCell(r, c) === color) {
+          count += 1;
+          r += dr;
+          c += dc;
+        }
+      }
+      if (count >= 4) return true;
+    }
+    return false;
+  }
+
+  function render() {
+    cells.forEach((cell, index) => {
+      const row = Math.floor(index / COLS);
+      const col = index % COLS;
+      cell.dataset.color = state.board[row][col] || "";
+    });
+    dropButtons.forEach((button, index) => {
+      button.disabled = !state.running || state.board[0][index];
+      button.dataset.turn = state.turn;
+    });
+    api.setCurrent(state.moves);
+  }
+
+  function start() {
+    state = {
+      board: createMatrix(ROWS, COLS),
+      turn: "red",
+      moves: 0,
+      running: true
+    };
+    setNote("Red opens. Tap a column.");
+    api.setPrimary("Restart", start);
+    render();
+  }
+
+  function drop(col) {
+    if (!state?.running) return;
+    let row = ROWS - 1;
+    while (row >= 0 && state.board[row][col]) row -= 1;
+    if (row < 0) {
+      api.sound("deny");
+      return;
+    }
+    state.board[row][col] = state.turn;
+    state.moves += 1;
+    api.sound("drop");
+    if (checkWin(row, col, state.turn)) {
+      state.running = false;
+      setNote(`${state.turn === "red" ? "Red" : "Gold"} connects four.`);
+      incrementWinBest(api);
+      api.sound("level");
+      render();
+      return;
+    }
+    if (state.moves === ROWS * COLS) {
+      state.running = false;
+      setNote("Draw grid. Restart for another round.");
+      render();
+      return;
+    }
+    state.turn = state.turn === "red" ? "gold" : "red";
+    setNote(`${state.turn === "red" ? "Red" : "Gold"} to drop.`);
+    render();
+  }
+
+  api.setPrimary("Start", start);
+  api.setCurrent(0);
+  return {
+    onKey(event) {
+      const col = Number(event.key) - 1;
+      if (Number.isInteger(col) && col >= 0 && col < COLS) {
+        event.preventDefault();
+        drop(col);
+      }
+    },
+    destroy() {}
+  };
+}
+
+function createHangman(root, api) {
+  api.setCurrentLabel("Streak");
+  api.setBestLabel("Best Streak");
+
+  const words = [
+    "arcade", "offline", "flight", "puzzle", "rocket", "signal", "travel", "screen",
+    "memory", "ticket", "window", "cabin", "pixel", "engine", "planet", "magnet"
+  ];
+  const stage = document.createElement("div");
+  stage.className = "board-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Mode <strong>Word</strong></div>
+      <div class="score-pill">Lives <strong data-lives>6</strong></div>
+    </div>
+    <div class="board-shell hangman-shell">
+      <div class="hangman-figure" data-figure>______</div>
+      <div class="hangman-word" data-word></div>
+      <div class="hangman-keyboard" data-keys></div>
+      <p class="board-note" data-note>Press Start to play.</p>
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const livesNode = stage.querySelector("[data-lives]");
+  const wordNode = stage.querySelector("[data-word]");
+  const keysNode = stage.querySelector("[data-keys]");
+  const noteNode = stage.querySelector("[data-note]");
+  const figureNode = stage.querySelector("[data-figure]");
+
+  const keyButtons = Array.from({ length: 26 }, (_, index) => {
+    const letter = String.fromCharCode(65 + index);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "hangman-key";
+    button.textContent = letter;
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      guess(letter.toLowerCase());
+    });
+    keysNode.appendChild(button);
+    return button;
+  });
+
+  let state = null;
+  const figureFrames = ["______", "_____|", "__O__|", "__O/_|", "__O/\\\\", "_/|_\\\\", "_/|_\\\\_"];
+
+  function chooseWord() {
+    return choice(words);
+  }
+
+  function renderWord() {
+    wordNode.innerHTML = "";
+    [...state.word].forEach((letter) => {
+      const slot = document.createElement("span");
+      slot.className = "hangman-slot";
+      slot.textContent = state.guessed.has(letter) ? letter.toUpperCase() : "";
+      wordNode.appendChild(slot);
+    });
+  }
+
+  function render() {
+    livesNode.textContent = String(Math.max(0, 6 - state.misses));
+    figureNode.textContent = figureFrames[state.misses];
+    keyButtons.forEach((button) => {
+      const letter = button.textContent.toLowerCase();
+      button.disabled = !state.running || state.guessed.has(letter);
+      button.classList.toggle("is-hit", state.guessed.has(letter) && state.word.includes(letter));
+      button.classList.toggle("is-miss", state.guessed.has(letter) && !state.word.includes(letter));
+    });
+    renderWord();
+    noteNode.textContent = state.note;
+    api.setCurrent(state.streak);
+    api.updateBest(state.bestStreak);
+  }
+
+  function launchRound(resetStreak) {
+    const nextStreak = resetStreak ? 0 : state?.streak || 0;
+    const bestStreak = Math.max(api.getBest() || 0, state?.bestStreak || 0);
+    state = {
+      word: chooseWord(),
+      guessed: new Set(),
+      misses: 0,
+      streak: nextStreak,
+      bestStreak,
+      running: true,
+      note: "Pick letters. Wrong calls burn the line."
+    };
+    api.setPrimary("Restart", () => launchRound(true));
+    render();
+  }
+
+  function finishRound(won) {
+    state.running = false;
+    if (won) {
+      state.streak += 1;
+      state.bestStreak = Math.max(state.bestStreak, state.streak);
+      state.note = `Solved: ${state.word.toUpperCase()}. Next word ready.`;
+      api.sound("level");
+      api.setPrimary("Next", () => launchRound(false));
+    } else {
+      state.streak = 0;
+      state.note = `Missed it. Word was ${state.word.toUpperCase()}.`;
+      api.sound("fail");
+      api.setPrimary("Retry", () => launchRound(true));
+    }
+    render();
+  }
+
+  function guess(letter) {
+    if (!state?.running || state.guessed.has(letter)) return;
+    state.guessed.add(letter);
+    if (state.word.includes(letter)) {
+      api.sound("ui");
+      if ([...state.word].every((char) => state.guessed.has(char))) {
+        finishRound(true);
+        return;
+      }
+    } else {
+      state.misses += 1;
+      api.sound("deny");
+      if (state.misses >= 6) {
+        finishRound(false);
+        return;
+      }
+    }
+    render();
+  }
+
+  api.setPrimary("Start", () => launchRound(true));
+  api.setCurrent(0);
+  return {
+    onKey(event) {
+      const key = event.key.toLowerCase();
+      if (key.length === 1 && key >= "a" && key <= "z") {
+        event.preventDefault();
+        guess(key);
+      }
+    },
+    destroy() {}
+  };
+}
+
+function createSlidingPuzzle(root, api) {
+  api.setCurrentLabel("Moves");
+  api.setBestLabel("Solves");
+
+  const size = 4;
+  const stage = document.createElement("div");
+  stage.className = "board-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Grid <strong>4x4</strong></div>
+      <div class="score-pill">Mode <strong>Tap</strong></div>
+    </div>
+    <div class="board-shell">
+      <div class="slide-grid" data-grid></div>
+      <p class="board-note" data-note>Press Start to shuffle.</p>
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const gridNode = stage.querySelector("[data-grid]");
+  const noteNode = stage.querySelector("[data-note]");
+  const cells = Array.from({ length: size * size }, (_, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "slide-cell";
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      move(index);
+    });
+    gridNode.appendChild(button);
+    return button;
+  });
+
+  let state = null;
+
+  function solvedBoard() {
+    return [...Array(size * size - 1).keys()].map((value) => value + 1).concat(0);
+  }
+
+  function neighbors(index) {
+    const row = Math.floor(index / size);
+    const col = index % size;
+    return [
+      row > 0 ? index - size : -1,
+      row < size - 1 ? index + size : -1,
+      col > 0 ? index - 1 : -1,
+      col < size - 1 ? index + 1 : -1
+    ].filter((value) => value >= 0);
+  }
+
+  function shuffleBoard() {
+    let board = solvedBoard();
+    let blank = board.indexOf(0);
+    for (let step = 0; step < 180; step += 1) {
+      const target = choice(neighbors(blank));
+      [board[blank], board[target]] = [board[target], board[blank]];
+      blank = target;
+    }
+    return board;
+  }
+
+  function isSolved() {
+    return state.board.every((value, index) => value === (index === size * size - 1 ? 0 : index + 1));
+  }
+
+  function render() {
+    cells.forEach((cell, index) => {
+      const value = state.board[index];
+      cell.textContent = value ? String(value) : "";
+      cell.disabled = !state.running || !neighbors(index).includes(state.blank);
+      cell.classList.toggle("is-empty", value === 0);
+    });
+    api.setCurrent(state.moves);
+    noteNode.textContent = state.note;
+  }
+
+  function start() {
+    state = {
+      board: shuffleBoard(),
+      blank: 0,
+      moves: 0,
+      running: true,
+      note: "Slide the tiles back into order."
+    };
+    state.blank = state.board.indexOf(0);
+    api.setPrimary("Restart", start);
+    render();
+  }
+
+  function move(index) {
+    if (!state?.running || !neighbors(index).includes(state.blank)) return;
+    [state.board[index], state.board[state.blank]] = [state.board[state.blank], state.board[index]];
+    state.blank = index;
+    state.moves += 1;
+    api.sound("slide");
+    if (isSolved()) {
+      state.running = false;
+      state.note = `Solved in ${state.moves} moves.`;
+      incrementWinBest(api);
+      api.sound("level");
+    }
+    render();
+  }
+
+  api.setPrimary("Start", start);
+  api.setCurrent(0);
+  return {
+    onKey(event) {
+      if (!state?.running) return;
+      const blank = state.blank;
+      if (event.key === "ArrowUp" && blank + size < state.board.length) move(blank + size);
+      if (event.key === "ArrowDown" && blank - size >= 0) move(blank - size);
+      if (event.key === "ArrowLeft" && blank % size < size - 1) move(blank + 1);
+      if (event.key === "ArrowRight" && blank % size > 0) move(blank - 1);
+    },
+    destroy() {}
+  };
+}
+
+function createCheckers(root, api) {
+  api.setCurrentLabel("Moves");
+  api.setBestLabel("Wins");
+
+  const size = 8;
+  const stage = document.createElement("div");
+  stage.className = "board-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Board <strong>8x8</strong></div>
+    </div>
+    <div class="board-shell">
+      <div class="checker-grid" data-grid></div>
+      <p class="board-note" data-note>Press Start to deal the board.</p>
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const gridNode = stage.querySelector("[data-grid]");
+  const noteNode = stage.querySelector("[data-note]");
+  const cells = Array.from({ length: size * size }, (_, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "checker-cell";
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      tap(Math.floor(index / size), index % size);
+    });
+    gridNode.appendChild(button);
+    return button;
+  });
+
+  let state = null;
+
+  function inBounds(row, col) {
+    return row >= 0 && row < size && col >= 0 && col < size;
+  }
+
+  function initialBoard() {
+    return createMatrix(size, size, (row, col) => {
+      if ((row + col) % 2 === 0) return null;
+      if (row < 3) return { color: "black", king: false };
+      if (row > 4) return { color: "red", king: false };
+      return null;
+    });
+  }
+
+  function dirs(piece) {
+    if (piece.king) return [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+    return piece.color === "red" ? [[-1, 1], [-1, -1]] : [[1, 1], [1, -1]];
+  }
+
+  function movesFor(row, col, captureOnly = false) {
+    const piece = state.board[row][col];
+    if (!piece || piece.color !== state.turn) return [];
+    const moves = [];
+    for (const [dr, dc] of dirs(piece)) {
+      const stepRow = row + dr;
+      const stepCol = col + dc;
+      if (!inBounds(stepRow, stepCol)) continue;
+      const stepPiece = state.board[stepRow][stepCol];
+      if (!stepPiece && !captureOnly) {
+        moves.push({ row: stepRow, col: stepCol, capture: null });
+        continue;
+      }
+      if (stepPiece && stepPiece.color !== piece.color) {
+        const jumpRow = row + dr * 2;
+        const jumpCol = col + dc * 2;
+        if (inBounds(jumpRow, jumpCol) && !state.board[jumpRow][jumpCol]) {
+          moves.push({ row: jumpRow, col: jumpCol, capture: [stepRow, stepCol] });
+        }
+      }
+    }
+    return moves;
+  }
+
+  function turnHasCapture() {
+    for (let row = 0; row < size; row += 1) {
+      for (let col = 0; col < size; col += 1) {
+        if (movesFor(row, col, true).some((move) => move.capture)) return true;
+      }
+    }
+    return false;
+  }
+
+  function playerHasMove(color) {
+    const savedTurn = state.turn;
+    state.turn = color;
+    for (let row = 0; row < size; row += 1) {
+      for (let col = 0; col < size; col += 1) {
+        if (movesFor(row, col, turnHasCapture()).length) {
+          state.turn = savedTurn;
+          return true;
+        }
+      }
+    }
+    state.turn = savedTurn;
+    return false;
+  }
+
+  function render() {
+    const captureOnly = state.running ? turnHasCapture() : false;
+    cells.forEach((cell, index) => {
+      const row = Math.floor(index / size);
+      const col = index % size;
+      const piece = state.board[row][col];
+      const legal = state.legalMoves.some((move) => move.row === row && move.col === col);
+      cell.className = `checker-cell${(row + col) % 2 ? " is-dark" : ""}`;
+      cell.classList.toggle("is-selected", Boolean(state.selected && state.selected.row === row && state.selected.col === col));
+      cell.classList.toggle("is-target", legal);
+      cell.disabled = !state.running || (!(piece && piece.color === state.turn) && !legal);
+      cell.innerHTML = piece
+        ? `<span class="checker-piece is-${piece.color}${piece.king ? " is-king" : ""}"></span>`
+        : "";
+      cell.dataset.capture = captureOnly ? "on" : "off";
+    });
+    api.setCurrent(state.moves);
+    noteNode.textContent = state.note;
+  }
+
+  function endGame(winner) {
+    state.running = false;
+    state.note = `${winner === "red" ? "Red" : "Black"} wins the board.`;
+    incrementWinBest(api);
+    api.sound("level");
+    render();
+  }
+
+  function start() {
+    state = {
+      board: initialBoard(),
+      turn: "red",
+      selected: null,
+      legalMoves: [],
+      moves: 0,
+      running: true,
+      note: "Red opens. Captures are forced."
+    };
+    api.setPrimary("Restart", start);
+    render();
+  }
+
+  function tap(row, col) {
+    if (!state?.running) return;
+    const captureOnly = turnHasCapture();
+    const target = state.legalMoves.find((move) => move.row === row && move.col === col);
+    if (state.selected && target) {
+      const piece = state.board[state.selected.row][state.selected.col];
+      state.board[state.selected.row][state.selected.col] = null;
+      state.board[row][col] = piece;
+      if (target.capture) {
+        const [cr, cc] = target.capture;
+        state.board[cr][cc] = null;
+      }
+      if ((piece.color === "red" && row === 0) || (piece.color === "black" && row === size - 1)) {
+        piece.king = true;
+      }
+      state.moves += 1;
+      api.sound(target.capture ? "lock" : "slide");
+      if (target.capture) {
+        state.selected = { row, col };
+        state.legalMoves = movesFor(row, col, true).filter((move) => move.capture);
+        if (state.legalMoves.length) {
+          state.note = `${piece.color === "red" ? "Red" : "Black"} keeps jumping.`;
+          render();
+          return;
+        }
+      }
+      const nextTurn = state.turn === "red" ? "black" : "red";
+      state.turn = nextTurn;
+      state.selected = null;
+      state.legalMoves = [];
+      if (!playerHasMove(nextTurn)) {
+        endGame(piece.color);
+        return;
+      }
+      state.note = `${nextTurn === "red" ? "Red" : "Black"} to move.`;
+      render();
+      return;
+    }
+
+    const piece = state.board[row][col];
+    if (!piece || piece.color !== state.turn) return;
+    const moves = movesFor(row, col, captureOnly).filter((move) => !captureOnly || move.capture);
+    if (!moves.length) return;
+    state.selected = { row, col };
+    state.legalMoves = moves;
+    state.note = "Choose a highlighted landing square.";
+    api.sound("ui");
+    render();
+  }
+
+  api.setPrimary("Start", start);
+  api.setCurrent(0);
+  return {
+    destroy() {}
+  };
+}
+
+function createReversi(root, api) {
+  api.setCurrentLabel("Moves");
+  api.setBestLabel("Wins");
+
+  const size = 8;
+  const stage = document.createElement("div");
+  stage.className = "board-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Board <strong>8x8</strong></div>
+    </div>
+    <div class="board-shell">
+      <div class="reversi-grid" data-grid></div>
+      <p class="board-note" data-note>Press Start to begin.</p>
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const gridNode = stage.querySelector("[data-grid]");
+  const noteNode = stage.querySelector("[data-note]");
+  const cells = Array.from({ length: size * size }, (_, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "reversi-cell";
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      play(Math.floor(index / size), index % size);
+    });
+    gridNode.appendChild(button);
+    return button;
+  });
+
+  let state = null;
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+
+  function inBounds(row, col) {
+    return row >= 0 && row < size && col >= 0 && col < size;
+  }
+
+  function flipsFor(turn, row, col) {
+    if (state.board[row][col]) return [];
+    const enemy = turn === "black" ? "white" : "black";
+    const flips = [];
+    for (const [dr, dc] of dirs) {
+      let r = row + dr;
+      let c = col + dc;
+      const line = [];
+      while (inBounds(r, c) && state.board[r][c] === enemy) {
+        line.push([r, c]);
+        r += dr;
+        c += dc;
+      }
+      if (line.length && inBounds(r, c) && state.board[r][c] === turn) {
+        flips.push(...line);
+      }
+    }
+    return flips;
+  }
+
+  function validMoves(turn) {
+    const list = [];
+    for (let row = 0; row < size; row += 1) {
+      for (let col = 0; col < size; col += 1) {
+        const flips = flipsFor(turn, row, col);
+        if (flips.length) list.push({ row, col, flips });
+      }
+    }
+    return list;
+  }
+
+  function scoreOf(color) {
+    return state.board.flat().filter((value) => value === color).length;
+  }
+
+  function render() {
+    const moves = validMoves(state.turn);
+    cells.forEach((cell, index) => {
+      const row = Math.floor(index / size);
+      const col = index % size;
+      const piece = state.board[row][col];
+      const isMove = moves.some((move) => move.row === row && move.col === col);
+      cell.classList.toggle("is-move", isMove);
+      cell.innerHTML = piece ? `<span class="reversi-disc is-${piece}"></span>` : isMove ? '<span class="reversi-hint"></span>' : "";
+      cell.disabled = !state.running || !isMove;
+    });
+    api.setCurrent(state.moves);
+    noteNode.textContent = `${state.note} Black ${scoreOf("black")} / White ${scoreOf("white")}`;
+  }
+
+  function finish() {
+    state.running = false;
+    const black = scoreOf("black");
+    const white = scoreOf("white");
+    if (black === white) {
+      state.note = "Draw board.";
+      api.sound("round");
+    } else {
+      state.note = `${black > white ? "Black" : "White"} controls the board.`;
+      incrementWinBest(api);
+      api.sound("level");
+    }
+    render();
+  }
+
+  function start() {
+    state = {
+      board: createMatrix(size, size),
+      turn: "black",
+      moves: 0,
+      running: true,
+      note: "Black opens."
+    };
+    state.board[3][3] = "white";
+    state.board[3][4] = "black";
+    state.board[4][3] = "black";
+    state.board[4][4] = "white";
+    api.setPrimary("Restart", start);
+    render();
+  }
+
+  function play(row, col) {
+    if (!state?.running) return;
+    const flips = flipsFor(state.turn, row, col);
+    if (!flips.length) return;
+    state.board[row][col] = state.turn;
+    flips.forEach(([r, c]) => {
+      state.board[r][c] = state.turn;
+    });
+    state.moves += 1;
+    api.sound("lock");
+    const nextTurn = state.turn === "black" ? "white" : "black";
+    if (validMoves(nextTurn).length) {
+      state.turn = nextTurn;
+      state.note = `${nextTurn === "black" ? "Black" : "White"} to move.`;
+      render();
+      return;
+    }
+    if (validMoves(state.turn).length) {
+      state.note = `${nextTurn === "black" ? "Black" : "White"} passes.`;
+      render();
+      return;
+    }
+    finish();
+  }
+
+  api.setPrimary("Start", start);
+  api.setCurrent(0);
+  return {
+    destroy() {}
+  };
+}
+
+function createDotsAndBoxes(root, api) {
+  api.setCurrentLabel("Boxes");
+  api.setBestLabel("Wins");
+
+  const size = 4;
+  const stage = document.createElement("div");
+  stage.className = "board-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Board <strong>4x4</strong></div>
+    </div>
+    <div class="board-shell">
+      <div class="dots-board" data-board></div>
+      <p class="board-note" data-note>Press Start to draw the first line.</p>
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const boardNode = stage.querySelector("[data-board]");
+  const noteNode = stage.querySelector("[data-note]");
+  let state = null;
+
+  function lineCount() {
+    return state.hLines.flat().filter(Boolean).length + state.vLines.flat().filter(Boolean).length;
+  }
+
+  function ownerLabel(owner) {
+    return owner === "amber" ? "Amber" : "Mint";
+  }
+
+  function claimBoxes(kind, row, col) {
+    const claimed = [];
+    const checks = [];
+    if (kind === "h") {
+      if (row > 0) checks.push([row - 1, col]);
+      if (row < size) checks.push([row, col]);
+    } else {
+      if (col > 0) checks.push([row, col - 1]);
+      if (col < size) checks.push([row, col]);
+    }
+    checks.forEach(([boxRow, boxCol]) => {
+      if (state.boxes[boxRow]?.[boxCol]) return;
+      if (
+        state.hLines[boxRow][boxCol] &&
+        state.hLines[boxRow + 1][boxCol] &&
+        state.vLines[boxRow][boxCol] &&
+        state.vLines[boxRow][boxCol + 1]
+      ) {
+        state.boxes[boxRow][boxCol] = state.turn;
+        state.scores[state.turn] += 1;
+        claimed.push([boxRow, boxCol]);
+      }
+    });
+    return claimed;
+  }
+
+  function render() {
+    boardNode.innerHTML = "";
+    boardNode.style.gridTemplateColumns = `repeat(${size * 2 + 1}, minmax(0, 1fr))`;
+    for (let row = 0; row < size * 2 + 1; row += 1) {
+      for (let col = 0; col < size * 2 + 1; col += 1) {
+        if (row % 2 === 0 && col % 2 === 0) {
+          const dot = document.createElement("span");
+          dot.className = "dots-dot";
+          boardNode.appendChild(dot);
+          continue;
+        }
+        if (row % 2 === 0) {
+          const line = document.createElement("button");
+          line.type = "button";
+          line.className = "dots-line is-horizontal";
+          const owner = state.hLines[row / 2][(col - 1) / 2];
+          if (owner) line.dataset.owner = owner;
+          line.disabled = !state.running || Boolean(owner);
+          line.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            playLine("h", row / 2, (col - 1) / 2);
+          });
+          boardNode.appendChild(line);
+          continue;
+        }
+        if (col % 2 === 0) {
+          const line = document.createElement("button");
+          line.type = "button";
+          line.className = "dots-line is-vertical";
+          const owner = state.vLines[(row - 1) / 2][col / 2];
+          if (owner) line.dataset.owner = owner;
+          line.disabled = !state.running || Boolean(owner);
+          line.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            playLine("v", (row - 1) / 2, col / 2);
+          });
+          boardNode.appendChild(line);
+          continue;
+        }
+        const box = document.createElement("div");
+        const owner = state.boxes[(row - 1) / 2][(col - 1) / 2];
+        box.className = "dots-box";
+        if (owner) {
+          box.dataset.owner = owner;
+          box.textContent = owner === "amber" ? "A" : "M";
+        }
+        boardNode.appendChild(box);
+      }
+    }
+    api.setCurrent(Math.max(state.scores.amber, state.scores.mint));
+    noteNode.textContent = `${state.note} Amber ${state.scores.amber} / Mint ${state.scores.mint}`;
+  }
+
+  function finish() {
+    state.running = false;
+    if (state.scores.amber === state.scores.mint) {
+      state.note = "Even board.";
+      api.sound("round");
+    } else {
+      state.note = `${ownerLabel(state.scores.amber > state.scores.mint ? "amber" : "mint")} wins the grid.`;
+      incrementWinBest(api);
+      api.sound("level");
+    }
+    render();
+  }
+
+  function start() {
+    state = {
+      hLines: createMatrix(size + 1, size, () => ""),
+      vLines: createMatrix(size, size + 1, () => ""),
+      boxes: createMatrix(size, size, () => ""),
+      scores: { amber: 0, mint: 0 },
+      turn: "amber",
+      running: true,
+      note: "Amber draws first."
+    };
+    api.setPrimary("Restart", start);
+    render();
+  }
+
+  function playLine(kind, row, col) {
+    if (!state?.running) return;
+    if (kind === "h") state.hLines[row][col] = state.turn;
+    else state.vLines[row][col] = state.turn;
+    const claimed = claimBoxes(kind, row, col);
+    api.sound(claimed.length ? "lock" : "ui");
+    if (!claimed.length) {
+      state.turn = state.turn === "amber" ? "mint" : "amber";
+      state.note = `${ownerLabel(state.turn)} to draw.`;
+    } else {
+      state.note = `${ownerLabel(state.turn)} claims ${claimed.length} box${claimed.length === 1 ? "" : "es"}.`;
+    }
+    if (lineCount() === (size + 1) * size * 2) {
+      finish();
+      return;
+    }
+    render();
+  }
+
+  api.setPrimary("Start", start);
+  api.setCurrent(0);
+  return {
+    destroy() {}
+  };
+}
+
+function createBattleship(root, api) {
+  api.setCurrentLabel("Hits");
+  api.setBestLabel("Wins");
+
+  const size = 6;
+  const ships = [3, 2, 2];
+  const stage = document.createElement("div");
+  stage.className = "board-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Mode <strong>Vs CPU</strong></div>
+      <div class="score-pill">Grid <strong>6x6</strong></div>
+    </div>
+    <div class="board-shell battle-shell">
+      <div class="battle-layout">
+        <div class="battle-panel">
+          <h4>Your Sea</h4>
+          <div class="battle-grid" data-player></div>
+        </div>
+        <div class="battle-panel">
+          <h4>Enemy Sea</h4>
+          <div class="battle-grid" data-cpu></div>
+        </div>
+      </div>
+      <p class="board-note" data-note>Press Start to launch.</p>
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const playerNode = stage.querySelector("[data-player]");
+  const cpuNode = stage.querySelector("[data-cpu]");
+  const noteNode = stage.querySelector("[data-note]");
+
+  const playerCells = Array.from({ length: size * size }, (_, index) => {
+    const cell = document.createElement("div");
+    cell.className = "battle-cell";
+    playerNode.appendChild(cell);
+    return cell;
+  });
+
+  const cpuCells = Array.from({ length: size * size }, (_, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "battle-cell";
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      fire(Math.floor(index / size), index % size);
+    });
+    cpuNode.appendChild(button);
+    return button;
+  });
+
+  let state = null;
+  let cpuTimer = 0;
+
+  function emptyBoard() {
+    return createMatrix(size, size, () => ({ ship: false, hit: false, miss: false }));
+  }
+
+  function randomFleet() {
+    const board = emptyBoard();
+    for (const length of ships) {
+      let placed = false;
+      while (!placed) {
+        const horizontal = Math.random() < 0.5;
+        const row = randomInt(0, horizontal ? size - 1 : size - length);
+        const col = randomInt(0, horizontal ? size - length : size - 1);
+        const coords = [];
+        for (let step = 0; step < length; step += 1) {
+          coords.push([row + (horizontal ? 0 : step), col + (horizontal ? step : 0)]);
+        }
+        if (coords.some(([r, c]) => board[r][c].ship)) continue;
+        coords.forEach(([r, c]) => {
+          board[r][c].ship = true;
+        });
+        placed = true;
+      }
+    }
+    return board;
+  }
+
+  function fleetDown(board) {
+    return board.flat().every((cell) => !cell.ship || cell.hit);
+  }
+
+  function render() {
+    playerCells.forEach((cell, index) => {
+      const row = Math.floor(index / size);
+      const col = index % size;
+      const slot = state.player[row][col];
+      cell.className = "battle-cell";
+      if (slot.ship) cell.classList.add("has-ship");
+      if (slot.hit) cell.classList.add("is-hit");
+      if (slot.miss) cell.classList.add("is-miss");
+    });
+    cpuCells.forEach((cell, index) => {
+      const row = Math.floor(index / size);
+      const col = index % size;
+      const slot = state.cpu[row][col];
+      cell.className = "battle-cell";
+      if (slot.hit) cell.classList.add("is-hit");
+      if (slot.miss) cell.classList.add("is-miss");
+      cell.disabled = !state.running || slot.hit || slot.miss || !state.playerTurn;
+    });
+    api.setCurrent(state.hits);
+    noteNode.textContent = state.note;
+  }
+
+  function cpuTurn() {
+    cpuTimer = 0;
+    if (!state.running) return;
+    const choices = [];
+    state.player.forEach((row, rowIndex) => {
+      row.forEach((cell, colIndex) => {
+        if (!cell.hit && !cell.miss) choices.push([rowIndex, colIndex]);
+      });
+    });
+    if (!choices.length) return;
+    const [row, col] = choice(choices);
+    const slot = state.player[row][col];
+    if (slot.ship) {
+      slot.hit = true;
+      state.note = "Enemy scores a hit.";
+      api.sound("explosion");
+      if (fleetDown(state.player)) {
+        state.running = false;
+        state.note = "Fleet lost. Restart the battle.";
+        api.sound("fail");
+        render();
+        return;
+      }
+    } else {
+      slot.miss = true;
+      state.note = "Enemy misses. Your turn.";
+      api.sound("ui");
+    }
+    state.playerTurn = true;
+    render();
+  }
+
+  function start() {
+    clearTimeout(cpuTimer);
+    state = {
+      player: randomFleet(),
+      cpu: randomFleet(),
+      playerTurn: true,
+      running: true,
+      hits: 0,
+      note: "Fire on the enemy grid."
+    };
+    api.setPrimary("Restart", start);
+    render();
+  }
+
+  function fire(row, col) {
+    if (!state?.running || !state.playerTurn) return;
+    const slot = state.cpu[row][col];
+    if (slot.hit || slot.miss) return;
+    state.playerTurn = false;
+    if (slot.ship) {
+      slot.hit = true;
+      state.hits += 1;
+      state.note = "Direct hit.";
+      api.sound("explosion");
+      if (fleetDown(state.cpu)) {
+        state.running = false;
+        state.note = "Enemy fleet sunk.";
+        incrementWinBest(api);
+        api.sound("level");
+        render();
+        return;
+      }
+    } else {
+      slot.miss = true;
+      state.note = "Splash. Enemy turn.";
+      api.sound("deny");
+    }
+    render();
+    cpuTimer = setTimeout(cpuTurn, 420);
+  }
+
+  api.setPrimary("Start", start);
+  api.setCurrent(0);
+  return {
+    destroy() {
+      clearTimeout(cpuTimer);
+    }
+  };
+}
+
+function createLudo(root, api) {
+  api.setCurrentLabel("Moves");
+  api.setBestLabel("Wins");
+
+  const pathLength = 24;
+  const finish = 27;
+  const players = [
+    { id: "red", label: "Red", start: 0 },
+    { id: "gold", label: "Gold", start: 12 }
+  ];
+  const stage = document.createElement("div");
+  stage.className = "board-stage";
+  stage.innerHTML = `
+    <div class="score-row">
+      <div class="score-pill">Mode <strong>Local</strong></div>
+      <div class="score-pill">Pawns <strong>2 each</strong></div>
+    </div>
+    <div class="board-shell ludo-shell">
+      <div class="ludo-toolbar">
+        <div class="score-pill">Die <strong data-die>-</strong></div>
+        <div class="score-pill">Turn <strong data-turn>Red</strong></div>
+      </div>
+      <div class="ludo-track" data-track></div>
+      <div class="ludo-lanes">
+        <div class="ludo-lane" data-lane="red"></div>
+        <div class="ludo-lane" data-lane="gold"></div>
+      </div>
+      <div class="ludo-pawns" data-pawns></div>
+      <p class="board-note" data-note>Press Start to race.</p>
+    </div>
+  `;
+  root.appendChild(stage);
+
+  const dieNode = stage.querySelector("[data-die]");
+  const turnNode = stage.querySelector("[data-turn]");
+  const trackNode = stage.querySelector("[data-track]");
+  const pawnsNode = stage.querySelector("[data-pawns]");
+  const noteNode = stage.querySelector("[data-note]");
+  const laneNodes = {
+    red: stage.querySelector('[data-lane="red"]'),
+    gold: stage.querySelector('[data-lane="gold"]')
+  };
+
+  const trackCells = Array.from({ length: pathLength }, (_, index) => {
+    const cell = document.createElement("div");
+    cell.className = "ludo-space";
+    if (index === 0 || index === 12) cell.classList.add("is-safe");
+    trackNode.appendChild(cell);
+    return cell;
+  });
+
+  let state = null;
+
+  function playerById(id) {
+    return players.find((player) => player.id === id);
+  }
+
+  function absolutePosition(playerId, progress) {
+    return (playerById(playerId).start + progress) % pathLength;
+  }
+
+  function movablePawns(player) {
+    const dice = state.die;
+    return state.pawns[player.id]
+      .map((progress, index) => ({ progress, index }))
+      .filter(({ progress }) => {
+        if (progress === -1) return dice === 6;
+        return progress + dice <= finish;
+      });
+  }
+
+  function pawnChip(playerId, index) {
+    return `<span class="ludo-pawn is-${playerId}" data-pawn="${playerId}-${index}"></span>`;
+  }
+
+  function render() {
+    trackCells.forEach((cell, trackIndex) => {
+      cell.innerHTML = "";
+      players.forEach((player) => {
+        state.pawns[player.id].forEach((progress, pawnIndex) => {
+          if (progress >= 0 && progress < pathLength && absolutePosition(player.id, progress) === trackIndex) {
+            cell.innerHTML += pawnChip(player.id, pawnIndex);
+          }
+        });
+      });
+    });
+    players.forEach((player) => {
+      laneNodes[player.id].innerHTML = "";
+      state.pawns[player.id].forEach((progress, pawnIndex) => {
+        if (progress >= pathLength) {
+          const slot = document.createElement("div");
+          slot.className = `ludo-home-slot is-${player.id}`;
+          slot.textContent = progress === finish ? "✓" : String(progress - pathLength + 1);
+          laneNodes[player.id].appendChild(slot);
+        }
+      });
+    });
+    pawnsNode.innerHTML = "";
+    const active = state.running && state.die > 0 ? movablePawns(playerById(state.turn)) : [];
+    const section = document.createElement("div");
+    section.className = "ludo-pawn-row";
+    active.forEach(({ index, progress }) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `ludo-pawn-button is-${state.turn}`;
+      button.textContent = progress === -1 ? `Home ${index + 1}` : `Pawn ${index + 1}`;
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        movePawn(index);
+      });
+      section.appendChild(button);
+    });
+    if (!active.length && state.running && state.die > 0) {
+      section.innerHTML = '<div class="ludo-pass">No move on this roll.</div>';
+    }
+    pawnsNode.appendChild(section);
+    dieNode.textContent = state.die > 0 ? String(state.die) : "-";
+    turnNode.textContent = playerById(state.turn).label;
+    noteNode.textContent = state.note;
+    api.setCurrent(state.moves);
+  }
+
+  function switchTurn(extra = false) {
+    state.die = 0;
+    if (!extra) {
+      state.turn = state.turn === "red" ? "gold" : "red";
+    }
+    state.note = `${playerById(state.turn).label} to roll.`;
+    render();
+  }
+
+  function start() {
+    state = {
+      pawns: { red: [-1, -1], gold: [-1, -1] },
+      turn: "red",
+      die: 0,
+      moves: 0,
+      running: true,
+      note: "Red to roll."
+    };
+    api.setPrimary("Roll", roll);
+    api.setSecondary("Restart", start);
+    render();
+  }
+
+  function roll() {
+    if (!state?.running || state.die > 0) return;
+    state.die = randomInt(1, 6);
+    api.sound("roll");
+    const moves = movablePawns(playerById(state.turn));
+    if (!moves.length) {
+      state.note = `${playerById(state.turn).label} rolled ${state.die} and cannot move.`;
+      render();
+      setTimeout(() => switchTurn(false), 520);
+      return;
+    }
+    state.note = `${playerById(state.turn).label} rolled ${state.die}. Choose a pawn.`;
+    render();
+  }
+
+  function movePawn(index) {
+    if (!state?.running || state.die <= 0) return;
+    const progress = state.pawns[state.turn][index];
+    if (progress === -1 && state.die !== 6) return;
+    const next = progress === -1 ? 0 : progress + state.die;
+    if (next > finish) return;
+    state.pawns[state.turn][index] = next;
+    if (next < pathLength) {
+      const abs = absolutePosition(state.turn, next);
+      const enemy = state.turn === "red" ? "gold" : "red";
+      if (![0, 12].includes(abs)) {
+        state.pawns[enemy] = state.pawns[enemy].map((value) =>
+          value >= 0 && value < pathLength && absolutePosition(enemy, value) === abs ? -1 : value
+        );
+      }
+    }
+    state.moves += 1;
+    api.sound("move");
+    if (state.pawns[state.turn].every((value) => value === finish)) {
+      state.running = false;
+      state.note = `${playerById(state.turn).label} wins the race.`;
+      incrementWinBest(api);
+      api.sound("level");
+      render();
+      return;
+    }
+    const extra = state.die === 6;
+    switchTurn(extra);
+  }
+
+  api.setPrimary("Start", start);
+  api.setSecondary("", null);
+  api.setCurrent(0);
+  return {
+    destroy() {}
   };
 }
 
