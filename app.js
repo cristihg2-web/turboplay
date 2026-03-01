@@ -2588,6 +2588,7 @@ function createLaneSplit(root, api) {
     speed: 172,
     level: 0,
     graceUsed: false,
+    shake: 0,
     raf: 0,
     lastTime: 0
   };
@@ -2730,6 +2731,68 @@ function createLaneSplit(root, api) {
     ctx.restore();
   }
 
+  function drawBillboard(x, baseY, scale, palette, label) {
+    ctx.save();
+    ctx.translate(x, baseY);
+
+    ctx.strokeStyle = "#14273a";
+    ctx.lineWidth = Math.max(2, scale * 4);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -24 * scale);
+    ctx.stroke();
+
+    const boardWidth = 28 * scale;
+    const boardHeight = 16 * scale;
+    ctx.fillStyle = palette.shadow;
+    ctx.fillRect(-boardWidth / 2 + 2, -24 * scale - boardHeight + 3, boardWidth, boardHeight);
+    ctx.fillStyle = palette.body;
+    ctx.fillRect(-boardWidth / 2, -24 * scale - boardHeight, boardWidth, boardHeight);
+    ctx.strokeStyle = palette.border;
+    ctx.lineWidth = Math.max(1.2, scale * 1.8);
+    ctx.strokeRect(-boardWidth / 2, -24 * scale - boardHeight, boardWidth, boardHeight);
+    ctx.fillStyle = "#08111f";
+    ctx.font = `${Math.max(6, scale * 8)}px var(--mono-fallback, monospace)`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, 0, -24 * scale - boardHeight / 2 + 1);
+    ctx.restore();
+  }
+
+  function drawHud() {
+    const nextMarker = (Math.floor(game.score / 2000) + 1) * 2000;
+    const chips = [
+      { x: 14, y: 14, text: `${Math.floor(game.score / 1000)} km`, accent: "#ffbf47" },
+      { x: width - 114, y: 14, text: game.graceUsed ? "No scrape left" : "1 scrape left", accent: game.graceUsed ? "#ff7d7d" : "#76f0c2" },
+      { x: 14, y: 42, text: `Next ${Math.floor(nextMarker / 1000)} km`, accent: "#7dd7ff" }
+    ];
+
+    chips.forEach((chip) => {
+      ctx.fillStyle = "rgba(5, 10, 24, 0.72)";
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(chip.x, chip.y, 100, 22, 11);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = chip.accent;
+      ctx.font = "800 10px var(--mono-fallback, monospace)";
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "left";
+      ctx.fillText(chip.text.toUpperCase(), chip.x + 10, chip.y + 11);
+    });
+  }
+
+  function pickSpawnLane() {
+    const recent = game.obstacles.filter((obstacle) => obstacle.y < road.horizon + 120);
+    let lanes = [0, 1, 2].filter(
+      (lane) => !recent.some((obstacle) => obstacle.lane === lane && Math.abs(obstacle.y - (road.horizon - 16)) < 90)
+    );
+    if (!lanes.length) lanes = [0, 1, 2];
+    return choice(lanes);
+  }
+
   function drawRoadScene() {
     const sky = ctx.createLinearGradient(0, 0, 0, road.horizon + 80);
     sky.addColorStop(0, "#10204f");
@@ -2751,6 +2814,16 @@ function createLaneSplit(root, api) {
       ctx.beginPath();
       ctx.moveTo(width / 2 - 30, sunY + line);
       ctx.lineTo(width / 2 + 30, sunY + line);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = "rgba(110, 198, 255, 0.16)";
+    ctx.lineWidth = 1;
+    for (let index = -6; index <= 6; index += 1) {
+      const x = width / 2 + index * 18;
+      ctx.beginPath();
+      ctx.moveTo(width / 2, road.horizon + 6);
+      ctx.lineTo(x, road.horizon + 72);
       ctx.stroke();
     }
 
@@ -2872,6 +2945,37 @@ function createLaneSplit(root, api) {
       drawPalm(metrics.left - offset, y + 8, scale);
       drawPalm(metrics.right + offset, y + 8, scale);
     }
+
+    for (let index = 0; index < 4; index += 1) {
+      const depth = ((index * 0.27) + (game.score * 0.0012)) % 1;
+      if (depth < 0.18) continue;
+      const y = road.horizon + depth * (height - road.horizon);
+      const metrics = roadMetrics(y);
+      const scale = 0.42 + depth * 0.9;
+      const offset = 34 + depth * 46;
+      const palette = index % 2 === 0
+        ? { body: "#ffcf63", border: "#f26d8f", shadow: "rgba(0,0,0,0.3)" }
+        : { body: "#78ebd0", border: "#6cc5ff", shadow: "rgba(0,0,0,0.3)" };
+      drawBillboard(metrics.left - offset, y + 6, scale, palette, index % 2 === 0 ? "TP" : "GO");
+      drawBillboard(metrics.right + offset, y + 6, scale, palette, index % 2 === 0 ? "80S" : "RUN");
+    }
+
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineCap = "round";
+    for (let index = 0; index < 10; index += 1) {
+      const phase = ((game.score * 0.006) + index * 0.11) % 1;
+      const y = road.horizon + phase * (height - road.horizon);
+      if (y < road.horizon + 30) continue;
+      const metrics = roadMetrics(y);
+      const side = index % 2 === 0 ? -1 : 1;
+      const anchorX = side < 0 ? metrics.left - 10 : metrics.right + 10;
+      const length = 8 + phase * 18;
+      ctx.lineWidth = 1 + phase * 2;
+      ctx.beginPath();
+      ctx.moveTo(anchorX, y);
+      ctx.lineTo(anchorX + side * length, y + 2 + phase * 4);
+      ctx.stroke();
+    }
   }
 
   function drawCar(centerX, baseY, carWidth, palette, player = false, steer = 0) {
@@ -2983,6 +3087,7 @@ function createLaneSplit(root, api) {
     game.speed = 172;
     game.level = 0;
     game.graceUsed = false;
+    game.shake = 0;
     game.lastTime = performance.now();
     api.setCurrent(0);
     api.setHint("Tap sides or swipe lanes.");
@@ -2993,6 +3098,7 @@ function createLaneSplit(root, api) {
 
   function stop() {
     game.running = false;
+    game.shake = 0.45;
     api.sound("crash");
     api.updateBest(Math.floor(game.score));
     api.setHint("Crashed.");
@@ -3006,12 +3112,18 @@ function createLaneSplit(root, api) {
     }
 
     game.graceUsed = true;
+    game.shake = 0.22;
     api.sound("scrape");
     api.setHint("Side scrape. Next hit ends the run.");
   }
 
   function draw() {
     ctx.clearRect(0, 0, width, height);
+    ctx.save();
+    if (game.shake > 0) {
+      const offset = game.shake * 5;
+      ctx.translate((Math.random() - 0.5) * offset, (Math.random() - 0.5) * offset * 0.5);
+    }
     drawRoadScene();
 
     game.obstacles
@@ -3031,6 +3143,8 @@ function createLaneSplit(root, api) {
       true,
       game.lane - game.lanePosition
     );
+    ctx.restore();
+    drawHud();
   }
 
   function loop(timestamp) {
@@ -3041,6 +3155,7 @@ function createLaneSplit(root, api) {
     game.score += distanceGain;
     game.spawnTimer += delta;
     game.lanePosition += (game.lane - game.lanePosition) * Math.min(1, delta * 0.012);
+    game.shake = Math.max(0, game.shake - (delta / 1000) * 1.4);
 
     const level = Math.floor(game.score / 2000);
     const progress = (game.score % 2000) / 2000;
@@ -3058,7 +3173,7 @@ function createLaneSplit(root, api) {
     if (game.spawnTimer > spawnEvery) {
       game.spawnTimer = 0;
       game.obstacles.push({
-        lane: randomInt(0, 2),
+        lane: pickSpawnLane(),
         y: road.horizon - 16,
         palette: choice(trafficPalettes),
         hit: false
