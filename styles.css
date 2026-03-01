@@ -101,6 +101,32 @@ button {
   flex-shrink: 0;
 }
 
+.appbar-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.appbar-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 191, 71, 0.18);
+  background: rgba(255, 191, 71, 0.08);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -218,6 +244,7 @@ button {
 }
 
 .game-type-pill {
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -237,6 +264,7 @@ button {
 .game-type-pill strong,
 .game-type-pill em {
   font-style: normal;
+  pointer-events: none;
 }
 
 .game-type-pill em {
@@ -250,6 +278,21 @@ button {
   color: var(--amber);
   border-color: rgba(255, 191, 71, 0.18);
   background: rgba(255, 191, 71, 0.08);
+}
+
+.game-type-pill.is-active {
+  color: var(--text);
+  border-color: rgba(255, 191, 71, 0.28);
+  background:
+    linear-gradient(145deg, rgba(255, 191, 71, 0.16), rgba(255, 108, 168, 0.08)),
+    rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 191, 71, 0.1);
+}
+
+.game-type-pill.is-total.is-active {
+  color: #1a1203;
+  background: linear-gradient(145deg, var(--amber), #ffd86c);
+  box-shadow: 0 8px 16px rgba(255, 191, 71, 0.18);
 }
 
 .game-rail-wrap {
@@ -1969,6 +2012,10 @@ button {
   .appbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .appbar-meta {
+    margin-left: 0;
   }
 
   .game-rail-wrap {

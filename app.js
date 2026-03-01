@@ -110,6 +110,7 @@ const GAME_DEFS = [
 const state = {
   store: loadObject(STORAGE_KEY, { bests: {}, plays: {}, settings: { audioEnabled: true } }),
   activeGameId: GAME_DEFS[0].id,
+  activeTypeFilter: null,
   controller: null,
   installPrompt: null,
   primaryHandler: null,
@@ -446,14 +447,21 @@ function updateAudioToggle() {
   els.audioToggle.setAttribute("aria-pressed", enabled ? "true" : "false");
 }
 
+function getFilteredGames() {
+  if (!state.activeTypeFilter) return GAME_DEFS;
+  return GAME_DEFS.filter((game) => game.kicker === state.activeTypeFilter);
+}
+
 function renderRail() {
+  const visibleGames = getFilteredGames();
   els.rail.innerHTML = "";
-  GAME_DEFS.forEach((game) => {
+  visibleGames.forEach((game) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "game-pill";
     button.dataset.gameId = game.id;
     button.innerHTML = `<span class="game-pill-type">${game.kicker}</span><strong>${game.name}</strong>`;
+    button.classList.toggle("is-active", game.id === state.activeGameId);
     button.addEventListener("click", () => switchGame(game.id));
     els.rail.appendChild(button);
   });
@@ -465,9 +473,23 @@ function renderRail() {
       map.set(game.kicker, (map.get(game.kicker) || 0) + 1);
       return map;
     }, new Map());
-    els.gameTypes.innerHTML = `<span class="game-type-pill is-total">${GAME_DEFS.length} games</span>${Array.from(byType.entries())
-      .map(([type, count]) => `<span class="game-type-pill"><strong>${type}</strong><em>${count}</em></span>`)
+    els.gameTypes.innerHTML = `<button class="game-type-pill is-total${state.activeTypeFilter ? "" : " is-active"}" type="button" data-game-type="">${GAME_DEFS.length} games</button>${Array.from(byType.entries())
+      .map(([type, count]) => `<button class="game-type-pill${state.activeTypeFilter === type ? " is-active" : ""}" type="button" data-game-type="${type}"><strong>${type}</strong><em>${count}</em></button>`)
       .join("")}`;
+    els.gameTypes.querySelectorAll("[data-game-type]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const nextFilter = button.dataset.gameType || null;
+        state.activeTypeFilter = nextFilter;
+        renderRail();
+        const nextVisibleGames = getFilteredGames();
+        const hasActiveVisible = nextVisibleGames.some((game) => game.id === state.activeGameId);
+        if (!hasActiveVisible && nextVisibleGames[0]) {
+          switchGame(nextVisibleGames[0].id);
+          return;
+        }
+        revealActiveGame(state.activeGameId);
+      });
+    });
   }
   syncRailControls();
 }
