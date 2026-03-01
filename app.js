@@ -3815,7 +3815,7 @@ function createDominoes(root, api) {
 
   function buildTileMarkup(tile, faceDown = false) {
     const halfMarkup = (value) => `
-      <span class="domino-half" aria-hidden="true">
+      <span class="domino-half" data-value="${value}" aria-hidden="true">
         ${Array.from({ length: 9 }, (_, index) => `<span class="domino-pip${PIP_MAP[value].includes(index) ? " is-on" : ""}"></span>`).join("")}
       </span>
     `;
@@ -3865,7 +3865,7 @@ function createDominoes(root, api) {
     }
 
     const boardWidth = chainNode.clientWidth || root.clientWidth || window.innerWidth - 96;
-    const tilesPerRow = clamp(Math.floor(boardWidth / 58), 5, 8);
+    const tilesPerRow = clamp(Math.floor(boardWidth / 72), 4, 7);
 
     for (let start = 0; start < game.chain.length; start += tilesPerRow) {
       const row = document.createElement("div");
