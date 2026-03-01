@@ -4752,8 +4752,8 @@ function createSolitaire(root, api) {
   const view = doc.defaultView || window;
   const viewportWidth = Math.min(root.clientWidth || view.innerWidth || 0, view.innerWidth || Infinity);
   const compactViewport = viewportWidth <= 520;
-  const CARD_WIDTH = compactViewport ? 48 : 54;
-  const CARD_HEIGHT = compactViewport ? 84 : 94;
+  const CARD_WIDTH = compactViewport ? 50 : 56;
+  const CARD_HEIGHT = compactViewport ? 88 : 98;
   const EMPTY_HEIGHT = CARD_HEIGHT + 10;
   const FACE_UP_STEP = compactViewport ? 18 : 21;
   const FACE_DOWN_STEP = compactViewport ? 10 : 12;
@@ -5229,8 +5229,8 @@ function createSolitaire(root, api) {
     const cards = currentSelectionCards(selection).slice(0, 5);
     const preview = doc.createElement("div");
     preview.className = "sol-drag-preview";
-    const originWidth = drag.originNode?.getBoundingClientRect().width || 64;
-    const previewWidth = Math.round(originWidth + 4);
+    const originWidth = drag.originNode?.getBoundingClientRect().width || CARD_WIDTH;
+    const previewWidth = Math.round(originWidth);
     preview.style.width = `${previewWidth}px`;
     preview.style.height = `${CARD_HEIGHT + Math.max(0, cards.length - 1) * DRAG_STEP}px`;
 

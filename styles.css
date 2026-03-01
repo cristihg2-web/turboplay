@@ -1472,8 +1472,8 @@ button {
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: none;
-  --sol-card-width: 54px;
-  --sol-card-height: 94px;
+  --sol-card-width: 56px;
+  --sol-card-height: 98px;
 }
 
 .solitaire-stage::-webkit-scrollbar {
@@ -2498,8 +2498,8 @@ button {
   }
 
   .solitaire-stage {
-    --sol-card-width: 48px;
-    --sol-card-height: 84px;
+    --sol-card-width: 50px;
+    --sol-card-height: 88px;
   }
 
   .solitaire-foundations {
