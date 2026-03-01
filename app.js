@@ -7211,14 +7211,70 @@ function createSlidingPuzzle(root, api) {
   api.setBestLabel("Solves");
 
   const size = 4;
+  const puzzleArt = encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0a1634"/>
+          <stop offset="52%" stop-color="#18295d"/>
+          <stop offset="100%" stop-color="#071126"/>
+        </linearGradient>
+        <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffd96f"/>
+          <stop offset="100%" stop-color="#ff8f5b"/>
+        </linearGradient>
+        <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1b2248"/>
+          <stop offset="100%" stop-color="#090d18"/>
+        </linearGradient>
+      </defs>
+      <rect width="320" height="320" fill="url(#sky)"/>
+      <circle cx="238" cy="84" r="56" fill="url(#sun)"/>
+      <g opacity="0.25" stroke="#ffbf47" stroke-width="3">
+        <line x1="182" y1="84" x2="294" y2="84"/>
+        <line x1="188" y1="101" x2="288" y2="101"/>
+        <line x1="196" y1="118" x2="280" y2="118"/>
+      </g>
+      <path d="M0 188 L62 148 L108 174 L154 134 L214 182 L262 146 L320 182 L320 320 L0 320 Z" fill="#101935"/>
+      <path d="M0 208 L72 162 L128 194 L196 150 L256 190 L320 154 L320 320 L0 320 Z" fill="#16214a"/>
+      <path d="M104 320 L156 198 L164 198 L216 320 Z" fill="url(#road)"/>
+      <g opacity="0.35" stroke="#ff5d95" stroke-width="2">
+        <line x1="34" y1="212" x2="286" y2="212"/>
+        <line x1="18" y1="232" x2="302" y2="232"/>
+        <line x1="0" y1="256" x2="320" y2="256"/>
+        <line x1="160" y1="198" x2="160" y2="320"/>
+        <line x1="160" y1="198" x2="118" y2="320"/>
+        <line x1="160" y1="198" x2="202" y2="320"/>
+        <line x1="160" y1="198" x2="84" y2="320"/>
+        <line x1="160" y1="198" x2="236" y2="320"/>
+      </g>
+      <g fill="#f5f7fb" font-family="Arial, sans-serif" font-weight="900">
+        <text x="34" y="72" font-size="44" letter-spacing="5">TP</text>
+        <text x="34" y="104" font-size="18" letter-spacing="4" fill="#ffcf63">SLIDE</text>
+      </g>
+      <g fill="#76f0c2" opacity="0.95">
+        <circle cx="52" cy="134" r="4"/>
+        <circle cx="82" cy="152" r="3"/>
+        <circle cx="116" cy="126" r="3"/>
+        <circle cx="278" cy="46" r="3"/>
+        <circle cx="298" cy="64" r="4"/>
+      </g>
+    </svg>
+  `);
+  const puzzleImage = `url("data:image/svg+xml;charset=UTF-8,${puzzleArt}")`;
   const stage = document.createElement("div");
   stage.className = "board-stage";
+  stage.style.setProperty("--slide-art", puzzleImage);
   stage.innerHTML = `
     <div class="score-row">
       <div class="score-pill">Grid <strong>4x4</strong></div>
       <div class="score-pill">Mode <strong>Tap</strong></div>
     </div>
     <div class="board-shell">
+      <div class="slide-head">
+        <div class="slide-preview" data-preview aria-label="Solved image reference"></div>
+        <p class="slide-copy">Rebuild the picture to match the preview.</p>
+      </div>
       <div class="slide-grid" data-grid></div>
       <p class="board-note" data-note>Press Start to shuffle.</p>
     </div>
@@ -7226,7 +7282,9 @@ function createSlidingPuzzle(root, api) {
   root.appendChild(stage);
 
   const gridNode = stage.querySelector("[data-grid]");
+  const previewNode = stage.querySelector("[data-preview]");
   const noteNode = stage.querySelector("[data-note]");
+  previewNode.style.backgroundImage = puzzleImage;
   const cells = Array.from({ length: size * size }, (_, index) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -7274,9 +7332,22 @@ function createSlidingPuzzle(root, api) {
   function render() {
     cells.forEach((cell, index) => {
       const value = state.board[index];
-      cell.textContent = value ? String(value) : "";
+      cell.textContent = "";
       cell.disabled = !state.running || !neighbors(index).includes(state.blank);
       cell.classList.toggle("is-empty", value === 0);
+      cell.classList.toggle("has-art", value !== 0);
+      if (!value) {
+        cell.style.backgroundImage = "";
+        cell.style.backgroundSize = "";
+        cell.style.backgroundPosition = "";
+        return;
+      }
+      const tileIndex = value - 1;
+      const row = Math.floor(tileIndex / size);
+      const col = tileIndex % size;
+      cell.style.backgroundImage = puzzleImage;
+      cell.style.backgroundSize = `${size * 100}% ${size * 100}%`;
+      cell.style.backgroundPosition = `${(col / (size - 1)) * 100}% ${(row / (size - 1)) * 100}%`;
     });
     api.setCurrent(state.moves);
     noteNode.textContent = state.note;
@@ -7288,7 +7359,7 @@ function createSlidingPuzzle(root, api) {
       blank: 0,
       moves: 0,
       running: true,
-      note: "Slide the tiles back into order."
+      note: "Match the picture to the preview."
     };
     state.blank = state.board.indexOf(0);
     api.setPrimary("Restart", start);
