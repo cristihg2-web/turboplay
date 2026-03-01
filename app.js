@@ -3953,7 +3953,7 @@ function createDominoes(root, api) {
   function playTile(owner, id, side) {
     const hand = owner === "player" ? game.playerHand : game.cpuHand;
     const tile = removeTile(hand, id);
-    if (!tile) return false;
+    if (!tile) return null;
 
     const oriented = orientTile(tile, side);
     if (!game.chain.length || side === "start") {
@@ -3972,7 +3972,11 @@ function createDominoes(root, api) {
     sortHand(game.cpuHand);
     api.sound(tile.a === tile.b ? "lock" : "brick");
     render();
-    return true;
+    return {
+      tile,
+      oriented,
+      isDouble: tile.a === tile.b
+    };
   }
 
   function scoreRound(message, gained) {
@@ -4084,9 +4088,14 @@ function createDominoes(root, api) {
       return;
     }
 
-    playTile("cpu", move.id, move.side);
-    updateNote(`CPU played ${move.side}.`);
+    const played = playTile("cpu", move.id, move.side);
+    if (!played) return;
+    updateNote(played.isDouble ? "CPU dropped a double." : `CPU played ${move.side}.`);
     if (maybeResolveRound()) return;
+    if (played.isDouble) {
+      queueCpuTurn("CPU played a double and goes again.");
+      return;
+    }
     beginPlayerTurn("Your turn.");
   }
 
@@ -4115,13 +4124,24 @@ function createDominoes(root, api) {
 
     const starter = chooseRandomStarter();
     if (starter) {
-      playTile(starter.owner, starter.tile.id, "start");
+      const opening = playTile(starter.owner, starter.tile.id, "start");
+      if (!opening) return;
       if (starter.owner === "player") {
-        queueCpuTurn(isNewMatch ? `You opened with ${starter.tile.a}-${starter.tile.b}. CPU turn.` : `Round ${game.round}. You opened. CPU turn.`);
-        api.setHint("Match ends when you lose a hand. Keep scoring while you survive.");
+        if (opening.isDouble) {
+          beginPlayerTurn(isNewMatch ? `You opened with a double ${starter.tile.a}-${starter.tile.b}. Play again.` : `Round ${game.round}. Double opening, your turn again.`);
+          api.setHint("Doubles give you another move.");
+        } else {
+          queueCpuTurn(isNewMatch ? `You opened with ${starter.tile.a}-${starter.tile.b}. CPU turn.` : `Round ${game.round}. You opened. CPU turn.`);
+          api.setHint("Match ends when you lose a hand. Keep scoring while you survive.");
+        }
       } else {
-        beginPlayerTurn(isNewMatch ? `CPU opened with ${starter.tile.a}-${starter.tile.b}.` : `Round ${game.round}. CPU opened.`);
-        api.setHint("Tap a tile to play it. Draw only when you have no move.");
+        if (opening.isDouble) {
+          queueCpuTurn(isNewMatch ? `CPU opened with double ${starter.tile.a}-${starter.tile.b}. CPU goes again.` : `Round ${game.round}. CPU opened with a double.`);
+          api.setHint("Doubles grant another turn, so wait for the next CPU move.");
+        } else {
+          beginPlayerTurn(isNewMatch ? `CPU opened with ${starter.tile.a}-${starter.tile.b}.` : `Round ${game.round}. CPU opened.`);
+          api.setHint("Tap a tile to play it. Draw only when you have no move.");
+        }
       }
     }
   }
@@ -4158,9 +4178,15 @@ function createDominoes(root, api) {
     }
 
     if (sides.length === 1) {
-      playTile("player", id, sides[0]);
-      updateNote(`You played ${sides[0]}.`);
+      const played = playTile("player", id, sides[0]);
+      if (!played) return;
+      updateNote(played.isDouble ? "Double played. Go again." : `You played ${sides[0]}.`);
       if (maybeResolveRound()) return;
+      if (played.isDouble) {
+        beginPlayerTurn("Double down. Play one more tile.");
+        api.setHint("Doubles keep the turn.");
+        return;
+      }
       queueCpuTurn("CPU turn.");
       return;
     }
@@ -4173,9 +4199,15 @@ function createDominoes(root, api) {
 
   function playSelectedSide(side) {
     if (!game.running || game.turn !== "player" || !game.selectedId) return;
-    playTile("player", game.selectedId, side);
-    updateNote(`You played ${side}.`);
+    const played = playTile("player", game.selectedId, side);
+    if (!played) return;
+    updateNote(played.isDouble ? `Double on ${side}. Go again.` : `You played ${side}.`);
     if (maybeResolveRound()) return;
+    if (played.isDouble) {
+      beginPlayerTurn("Double down. Play one more tile.");
+      api.setHint("Doubles keep the turn.");
+      return;
+    }
     queueCpuTurn("CPU turn.");
   }
 
