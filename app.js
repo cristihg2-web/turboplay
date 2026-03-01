@@ -490,6 +490,36 @@ function createAudioEngine() {
       case "lane":
         beep({ time: now, freq: 440, endFreq: 523.25, duration: 0.05, gain: 0.065 });
         break;
+      case "engine": {
+        const pitch = clamp(detail.pitch ?? 0.5, 0, 1);
+        const base = 84 + pitch * 64;
+        tone({
+          time: now,
+          freq: base,
+          endFreq: base * (1.03 + pitch * 0.03),
+          duration: 0.085,
+          type: "sawtooth",
+          gain: 0.026 + pitch * 0.018,
+          attack: 0.001,
+          filter: 1700 + pitch * 1200,
+          q: 0.44
+        });
+        tone({
+          time: now + 0.008,
+          freq: base * 2.02,
+          endFreq: base * 1.92,
+          duration: 0.055,
+          type: "square",
+          gain: 0.012 + pitch * 0.01,
+          attack: 0.001,
+          filter: 2200 + pitch * 1800,
+          q: 0.26
+        });
+        if (detail.boost) {
+          beep({ time: now + 0.02, freq: base * 3.1, endFreq: base * 2.8, duration: 0.03, gain: 0.018 });
+        }
+        break;
+      }
       case "stack":
         beep({ time: now, freq: detail.perfect ? 988 : 659.25, endFreq: detail.perfect ? 1174 : 783.99, duration: 0.07, gain: 0.078 });
         if (detail.perfect) {
@@ -2589,6 +2619,7 @@ function createLaneSplit(root, api) {
     level: 0,
     graceUsed: false,
     shake: 0,
+    engineTick: 0,
     raf: 0,
     lastTime: 0
   };
@@ -2663,16 +2694,19 @@ function createLaneSplit(root, api) {
     return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   }
 
+  function roadCurve(distance) {
+    const major = Math.sin(distance / 560);
+    const sweep = Math.sin(distance / 310 + 0.8) * 0.58;
+    const twitch = Math.sin(distance / 138 + 1.4) * 0.18;
+    return major + sweep + twitch;
+  }
+
   function roadMetrics(y) {
     const depth = clamp((y - road.horizon) / (height - road.horizon), 0, 1);
     const roadWidth = 92 + depth * 210;
-    const lookAhead = game.score + depth * 1240;
-    const sectionLength = 920;
-    const section = Math.floor(lookAhead / sectionLength);
-    const sectionProgress = (lookAhead % sectionLength) / sectionLength;
-    const curveDirection = section % 2 === 0 ? -1 : 1;
-    const curveStrength = Math.sin(sectionProgress * Math.PI) * curveDirection;
-    const bend = curveStrength * depth * (18 + depth * 24);
+    const lookAhead = game.score + depth * 1480;
+    const curveStrength = roadCurve(lookAhead);
+    const bend = curveStrength * depth * (30 + depth * 46);
     const center = width / 2 + bend;
     const laneWidth = roadWidth / 3;
 
@@ -3088,6 +3122,7 @@ function createLaneSplit(root, api) {
     game.level = 0;
     game.graceUsed = false;
     game.shake = 0;
+    game.engineTick = 0;
     game.lastTime = performance.now();
     api.setCurrent(0);
     api.setHint("Tap sides or swipe lanes.");
@@ -3166,6 +3201,15 @@ function createLaneSplit(root, api) {
     }
 
     game.speed = 172 + level * 22 + progress * 18;
+    game.engineTick += delta;
+    const engineInterval = Math.max(52, 94 - level * 4 - progress * 18);
+    if (game.engineTick >= engineInterval) {
+      game.engineTick = 0;
+      api.sound("engine", {
+        pitch: clamp((game.speed - 172) / 170, 0, 1),
+        boost: Math.abs(game.lane - game.lanePosition) > 0.12
+      });
+    }
     api.setCurrent(Math.floor(game.score));
 
     const spawnEvery = Math.max(460, 940 - level * 90 - progress * 80);
