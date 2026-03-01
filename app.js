@@ -107,6 +107,22 @@ const GAME_DEFS = [
   }
 ];
 
+const GAME_PILL_ART = {
+  merge: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="7" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="17" y="7" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="11" y="18" width="10" height="10" rx="2" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="2"/></svg>',
+  pulse: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="3" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="2"/><rect x="18" y="5" width="9" height="9" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="18" width="9" height="9" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="18" y="18" width="9" height="9" rx="3" fill="currentColor" fill-opacity=".38" stroke="currentColor" stroke-width="2"/></svg>',
+  radar: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="16" cy="16" r="5" fill="none" stroke="currentColor" stroke-width="2" opacity=".8"/><path d="M16 16 L24 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M16 5v4M5 16h4M23 16h4M16 23v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>',
+  comet: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 12c6 0 9-3 12-7-1 5 1 9 6 11-6 1-10 4-12 11-1-5-3-9-6-15Z" fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="22" cy="10" r="3" fill="currentColor"/></svg>',
+  snake: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 23c0-5 4-8 9-8h3c3 0 5-2 5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="10" r="3" fill="currentColor"/><circle cx="25" cy="9" r="0.8" fill="#0b1020"/></svg>',
+  lane: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 4h12l4 24H6L10 4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M16 7v5M16 15v4M16 22v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  stacker: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="20" width="20" height="6" rx="2" fill="currentColor" fill-opacity=".22" stroke="currentColor" stroke-width="2"/><rect x="9" y="13" width="14" height="6" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12" y="6" width="8" height="6" rx="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  lock: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="16" cy="16" r="4" fill="currentColor" fill-opacity=".22" stroke="currentColor" stroke-width="2"/><path d="M16 6v3M26 16h-3M16 26v-3M6 16h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  dice: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="6" width="20" height="20" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/><circle cx="21" cy="11" r="1.6" fill="currentColor"/><circle cx="16" cy="16" r="1.6" fill="currentColor"/><circle cx="11" cy="21" r="1.6" fill="currentColor"/><circle cx="21" cy="21" r="1.6" fill="currentColor"/></svg>',
+  domino: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="5" width="18" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 16h18" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="1.6" fill="currentColor"/><circle cx="20" cy="10" r="1.6" fill="currentColor"/><circle cx="16" cy="21" r="1.6" fill="currentColor"/><circle cx="12" cy="24" r="1.6" fill="currentColor"/><circle cx="20" cy="24" r="1.6" fill="currentColor"/></svg>',
+  sweep: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="6" fill="currentColor"/><path d="M16 4v4M16 26v3M4 17h4M24 17h4M7 8l3 3M22 23l3 3M25 8l-3 3M7 26l3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 9c1 0 2-1 2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  brick: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="8" width="22" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8v5M10.5 13h11M10.5 19h11M10 19v5M22 19v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  orbit: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="4" fill="currentColor"/><ellipse cx="16" cy="16" rx="11" ry="6.5" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="16" cy="16" rx="6.5" ry="11" fill="none" stroke="currentColor" stroke-width="2" opacity=".75"/><circle cx="24" cy="12" r="1.6" fill="currentColor"/></svg>'
+};
+
 const state = {
   store: loadObject(STORAGE_KEY, { bests: {}, plays: {}, settings: { audioEnabled: true } }),
   activeGameId: GAME_DEFS[0].id,
@@ -460,7 +476,13 @@ function renderRail() {
     button.type = "button";
     button.className = "game-pill";
     button.dataset.gameId = game.id;
-    button.innerHTML = `<span class="game-pill-type">${game.kicker}</span><strong>${game.name}</strong>`;
+    button.innerHTML = `
+      <span class="game-pill-art" aria-hidden="true">${GAME_PILL_ART[game.id] || ""}</span>
+      <span class="game-pill-copy">
+        <span class="game-pill-type">${game.kicker}</span>
+        <strong>${game.name}</strong>
+      </span>
+    `;
     button.classList.toggle("is-active", game.id === state.activeGameId);
     button.addEventListener("click", () => switchGame(game.id));
     els.rail.appendChild(button);

@@ -326,7 +326,7 @@ button {
 .game-rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(118px, 1fr);
+  grid-auto-columns: 148px;
   gap: 8px;
   overflow-x: auto;
   padding: 8px 50px;
@@ -388,16 +388,53 @@ button {
 }
 
 .game-pill {
+  --pill-accent: rgba(255, 255, 255, 0.3);
+  --pill-accent-soft: rgba(255, 255, 255, 0.08);
+  --pill-ink: var(--text);
   display: grid;
-  gap: 5px;
-  min-height: 56px;
-  padding: 8px 10px 9px;
-  border: 1px solid transparent;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  width: 148px;
+  min-height: 64px;
+  padding: 8px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--pill-accent) 20%, transparent), transparent 48%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
   color: var(--text);
   text-align: left;
   scroll-snap-align: start;
+}
+
+.game-pill-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.game-pill-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  border: 1px solid color-mix(in srgb, var(--pill-accent) 38%, rgba(255, 255, 255, 0.06));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--pill-accent) 20%, transparent), rgba(255, 255, 255, 0.03)),
+    var(--pill-accent-soft);
+  color: var(--pill-ink);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 16px rgba(0, 0, 0, 0.14);
+}
+
+.game-pill-art svg {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
 .game-pill-type {
@@ -430,10 +467,26 @@ button {
 .game-pill.is-active {
   border-color: rgba(255, 191, 71, 0.34);
   background:
-    linear-gradient(145deg, rgba(255, 191, 71, 0.2), rgba(255, 108, 168, 0.1)),
+    linear-gradient(145deg, color-mix(in srgb, var(--pill-accent) 28%, rgba(255, 191, 71, 0.12)), rgba(255, 108, 168, 0.08)),
     rgba(255, 255, 255, 0.04);
-  box-shadow: inset 0 0 0 1px rgba(255, 191, 71, 0.16);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 191, 71, 0.16),
+    0 10px 20px rgba(0, 0, 0, 0.14);
 }
+
+.game-pill[data-game-id="merge"] { --pill-accent: #ffbf47; --pill-accent-soft: rgba(255, 191, 71, 0.08); --pill-ink: #ffcf63; }
+.game-pill[data-game-id="pulse"] { --pill-accent: #76f0c2; --pill-accent-soft: rgba(118, 240, 194, 0.08); --pill-ink: #8df4cc; }
+.game-pill[data-game-id="radar"] { --pill-accent: #5ee1ff; --pill-accent-soft: rgba(94, 225, 255, 0.08); --pill-ink: #7ae8ff; }
+.game-pill[data-game-id="comet"] { --pill-accent: #ff8a5b; --pill-accent-soft: rgba(255, 138, 91, 0.08); --pill-ink: #ffab78; }
+.game-pill[data-game-id="snake"] { --pill-accent: #5ad66f; --pill-accent-soft: rgba(90, 214, 111, 0.08); --pill-ink: #7ee48f; }
+.game-pill[data-game-id="lane"] { --pill-accent: #ff6ca8; --pill-accent-soft: rgba(255, 108, 168, 0.08); --pill-ink: #ff87b8; }
+.game-pill[data-game-id="stacker"] { --pill-accent: #ffbf47; --pill-accent-soft: rgba(255, 191, 71, 0.08); --pill-ink: #ffd062; }
+.game-pill[data-game-id="lock"] { --pill-accent: #c6a3ff; --pill-accent-soft: rgba(198, 163, 255, 0.08); --pill-ink: #d7bcff; }
+.game-pill[data-game-id="dice"] { --pill-accent: #f8f8ff; --pill-accent-soft: rgba(248, 248, 255, 0.06); --pill-ink: #f5f7fb; }
+.game-pill[data-game-id="domino"] { --pill-accent: #e9edf5; --pill-accent-soft: rgba(233, 237, 245, 0.06); --pill-ink: #f5f7fb; }
+.game-pill[data-game-id="sweep"] { --pill-accent: #ff6ca8; --pill-accent-soft: rgba(255, 108, 168, 0.08); --pill-ink: #ff87b8; }
+.game-pill[data-game-id="brick"] { --pill-accent: #ffbf47; --pill-accent-soft: rgba(255, 191, 71, 0.08); --pill-ink: #ffd062; }
+.game-pill[data-game-id="orbit"] { --pill-accent: #5ee1ff; --pill-accent-soft: rgba(94, 225, 255, 0.08); --pill-ink: #7ae8ff; }
 
 .cabinet {
   margin-top: 12px;
@@ -2024,10 +2077,29 @@ button {
   }
 
   .game-rail {
-    grid-auto-columns: minmax(106px, 62%);
+    grid-auto-columns: 126px;
     padding: 8px;
     border: 1px solid var(--line);
     box-shadow: var(--shadow);
+  }
+
+  .game-pill {
+    width: 126px;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 7px;
+    min-height: 58px;
+    padding: 7px 8px;
+  }
+
+  .game-pill-art {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  .game-pill-art svg {
+    width: 21px;
+    height: 21px;
   }
 
   .game-type-strip {
