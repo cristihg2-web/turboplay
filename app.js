@@ -489,6 +489,8 @@ function renderRail() {
   });
   if (els.gameCount) {
     els.gameCount.textContent = `${GAME_DEFS.length} games`;
+    els.gameCount.classList.toggle("is-active", !state.activeTypeFilter);
+    els.gameCount.setAttribute("aria-pressed", state.activeTypeFilter ? "false" : "true");
   }
   if (els.gameTypes) {
     const byType = GAME_DEFS.reduce((map, game) => {
@@ -514,6 +516,12 @@ function renderRail() {
     });
   }
   syncRailControls();
+}
+
+function showAllGames() {
+  state.activeTypeFilter = null;
+  renderRail();
+  revealActiveGame(state.activeGameId);
 }
 
 function syncRailControls() {
@@ -562,6 +570,15 @@ function setupRailControls() {
   window.addEventListener("resize", syncRailControls);
   window.addEventListener("load", syncRailControls);
   window.setTimeout(syncRailControls, 0);
+}
+
+function setupGameCountButton() {
+  if (!els.gameCount) return;
+  els.gameCount.addEventListener("click", () => {
+    if (!state.activeTypeFilter) return;
+    showAllGames();
+    audio.play("ui");
+  });
 }
 
 function setPrimaryAction(label, handler) {
@@ -5845,6 +5862,7 @@ function createOrbitMatch(root, api) {
 
 renderRail();
 setupRailControls();
+setupGameCountButton();
 setupAudio();
 registerOffline();
 setupInstall();
