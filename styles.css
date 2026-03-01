@@ -1972,7 +1972,9 @@ button {
 .slide-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  width: min(100%, 276px);
+  margin: 0 auto;
+  gap: 6px;
 }
 
 .slide-cell {
@@ -1982,7 +1984,7 @@ button {
   aspect-ratio: 1;
   min-height: 0;
   padding: 0;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background-color: rgba(255, 255, 255, 0.03);
   background-repeat: no-repeat;
@@ -3297,6 +3299,15 @@ button {
 
   .slide-copy {
     font-size: 0.84rem;
+  }
+
+  .slide-grid {
+    width: min(100%, 248px);
+    gap: 5px;
+  }
+
+  .slide-cell {
+    border-radius: 12px;
   }
 
   .ttt-cell {
