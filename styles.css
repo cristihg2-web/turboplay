@@ -1480,7 +1480,7 @@ button {
 
 .solitaire-top {
   display: grid;
-  grid-template-columns: 68px 68px minmax(288px, 1fr);
+  grid-template-columns: 62px 62px minmax(256px, 1fr);
   gap: 10px;
   min-width: max-content;
 }
@@ -1498,8 +1498,8 @@ button {
   display: grid;
   place-items: center;
   width: 100%;
-  min-height: 96px;
-  padding: 7px;
+  min-height: 108px;
+  padding: 7px 6px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.11);
   background:
@@ -1528,7 +1528,7 @@ button {
 }
 
 .sol-slot {
-  aspect-ratio: 0.68;
+  aspect-ratio: 0.58;
   min-width: 0;
 }
 
@@ -1643,14 +1643,14 @@ button {
 }
 
 .sol-card-center {
-  font-size: 2rem;
+  font-size: 1.92rem;
   line-height: 1;
   transform: translateY(2px);
   text-shadow: 0 3px 8px rgba(18, 30, 54, 0.08);
 }
 
 .sol-slot .sol-card-center {
-  font-size: 1.72rem;
+  font-size: 1.64rem;
 }
 
 .sol-stock.is-empty .sol-slot-mark {
@@ -1663,15 +1663,15 @@ button {
 
 .solitaire-tableau {
   display: grid;
-  grid-template-columns: repeat(7, minmax(66px, 1fr));
+  grid-template-columns: repeat(7, minmax(62px, 1fr));
   gap: 8px;
   min-width: max-content;
 }
 
 .sol-column {
   position: relative;
-  min-width: 66px;
-  min-height: 104px;
+  min-width: 62px;
+  min-height: 118px;
   border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
@@ -1684,7 +1684,7 @@ button {
 .sol-card {
   position: absolute;
   left: 0;
-  min-height: 96px;
+  min-height: 108px;
 }
 
 .sol-card.is-face-down {
@@ -1712,7 +1712,7 @@ button {
 
 .sol-empty-column {
   width: 100%;
-  min-height: 96px;
+  min-height: 108px;
   background:
     linear-gradient(180deg, rgba(20, 30, 52, 0.94), rgba(10, 15, 28, 0.98));
   border-style: dashed;
@@ -1728,7 +1728,7 @@ button {
   position: fixed;
   top: 0;
   left: 0;
-  width: 68px;
+  width: 62px;
   pointer-events: none;
   z-index: 80;
   filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.24));
@@ -1737,8 +1737,8 @@ button {
 .sol-drag-card {
   position: absolute;
   left: 0;
-  width: 68px;
-  min-height: 96px;
+  width: 62px;
+  min-height: 108px;
   transform: rotate(-1.2deg);
 }
 
@@ -2489,7 +2489,7 @@ button {
   }
 
   .solitaire-top {
-    grid-template-columns: 58px 58px minmax(252px, 1fr);
+    grid-template-columns: 54px 54px minmax(232px, 1fr);
     gap: 8px;
   }
 
@@ -2500,8 +2500,8 @@ button {
   .sol-slot,
   .sol-card,
   .sol-empty-column {
-    min-height: 84px;
-    padding: 5px;
+    min-height: 92px;
+    padding: 5px 4px;
     border-radius: 12px;
   }
 
@@ -2528,35 +2528,35 @@ button {
   }
 
   .sol-card-center {
-    font-size: 1.56rem;
+    font-size: 1.5rem;
   }
 
   .sol-slot .sol-card-center {
-    font-size: 1.4rem;
+    font-size: 1.34rem;
   }
 
   .solitaire-tableau {
-    grid-template-columns: repeat(7, minmax(58px, 1fr));
+    grid-template-columns: repeat(7, minmax(54px, 1fr));
     gap: 7px;
   }
 
   .sol-column {
-    min-width: 58px;
-    min-height: 90px;
+    min-width: 54px;
+    min-height: 98px;
   }
 
   .sol-empty-column {
-    min-height: 84px;
+    min-height: 92px;
     font-size: 1.24rem;
   }
 
   .sol-drag-preview,
   .sol-drag-card {
-    width: 58px;
+    width: 54px;
   }
 
   .sol-drag-card {
-    min-height: 84px;
+    min-height: 92px;
   }
 
   .sweep-shell {

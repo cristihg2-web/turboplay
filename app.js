@@ -4748,12 +4748,12 @@ function createSolitaire(root, api) {
   const TABLEAU_COUNT = 7;
   const FOUNDATION_COUNT = 4;
   const COMPLETE_FOUNDATION = 52;
-  const CARD_HEIGHT = 96;
-  const EMPTY_HEIGHT = 104;
-  const FACE_UP_STEP = 22;
-  const FACE_DOWN_STEP = 12;
-  const DRAG_STEP = 18;
-  const COLUMN_FOOT = 74;
+  const CARD_HEIGHT = 108;
+  const EMPTY_HEIGHT = 118;
+  const FACE_UP_STEP = 24;
+  const FACE_DOWN_STEP = 13;
+  const DRAG_STEP = 20;
+  const COLUMN_FOOT = 82;
 
   const stage = document.createElement("div");
   stage.className = "dom-stage solitaire-stage";
