@@ -113,18 +113,23 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 30px;
-  padding: 6px 11px;
+  min-height: 38px;
+  padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid rgba(255, 191, 71, 0.18);
-  background: rgba(255, 191, 71, 0.08);
+  background:
+    linear-gradient(145deg, rgba(255, 191, 71, 0.16), rgba(255, 216, 108, 0.08)),
+    rgba(255, 191, 71, 0.08);
   color: var(--amber);
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.82rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   white-space: nowrap;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 191, 71, 0.08),
+    0 8px 18px rgba(255, 191, 71, 0.12);
 }
 
 .brand {
@@ -274,12 +279,6 @@ button {
   letter-spacing: 0.04em;
 }
 
-.game-type-pill.is-total {
-  color: var(--amber);
-  border-color: rgba(255, 191, 71, 0.18);
-  background: rgba(255, 191, 71, 0.08);
-}
-
 .game-type-pill.is-active {
   color: var(--text);
   border-color: rgba(255, 191, 71, 0.28);
@@ -287,12 +286,6 @@ button {
     linear-gradient(145deg, rgba(255, 191, 71, 0.16), rgba(255, 108, 168, 0.08)),
     rgba(255, 255, 255, 0.04);
   box-shadow: inset 0 0 0 1px rgba(255, 191, 71, 0.1);
-}
-
-.game-type-pill.is-total.is-active {
-  color: #1a1203;
-  background: linear-gradient(145deg, var(--amber), #ffd86c);
-  box-shadow: 0 8px 16px rgba(255, 191, 71, 0.18);
 }
 
 .game-rail-wrap {

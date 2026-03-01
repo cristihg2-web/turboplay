@@ -473,7 +473,7 @@ function renderRail() {
       map.set(game.kicker, (map.get(game.kicker) || 0) + 1);
       return map;
     }, new Map());
-    els.gameTypes.innerHTML = `<button class="game-type-pill is-total${state.activeTypeFilter ? "" : " is-active"}" type="button" data-game-type="">${GAME_DEFS.length} games</button>${Array.from(byType.entries())
+    els.gameTypes.innerHTML = `${Array.from(byType.entries())
       .map(([type, count]) => `<button class="game-type-pill${state.activeTypeFilter === type ? " is-active" : ""}" type="button" data-game-type="${type}"><strong>${type}</strong><em>${count}</em></button>`)
       .join("")}`;
     els.gameTypes.querySelectorAll("[data-game-type]").forEach((button) => {
