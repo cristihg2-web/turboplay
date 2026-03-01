@@ -1578,20 +1578,20 @@ function createCometDestroyer(root, api) {
   stage.appendChild(rightBadge);
   root.appendChild(stage);
 
-  const batteryBase = { x: 28, y: 346 };
+  const batteryBase = { x: 22, y: 356 };
   const batterySlots = [
-    { x: 18, y: 326 },
-    { x: 30, y: 316 },
-    { x: 30, y: 338 },
-    { x: 42, y: 328 }
+    { x: 12, y: 336 },
+    { x: 24, y: 326 },
+    { x: 24, y: 348 },
+    { x: 36, y: 338 }
   ];
 
   const skylineTargets = [
-    { x: 48, y: 292 },
-    { x: 72, y: 316 },
-    { x: 96, y: 286 },
-    { x: 112, y: 334 },
-    { x: 132, y: 308 }
+    { x: 42, y: 286 },
+    { x: 62, y: 308 },
+    { x: 84, y: 280 },
+    { x: 104, y: 324 },
+    { x: 122, y: 300 }
   ];
 
   const game = {
@@ -1682,23 +1682,18 @@ function createCometDestroyer(root, api) {
       x: anchor.x + spread * 12 + randomInt(-8, 8),
       y: anchor.y + randomInt(-10, 10)
     };
-    const crossPoint = {
-      x: randomInt(228, 286),
-      y: randomInt(112, 208)
-    };
-    const directionOut = normalize(crossPoint.x - target.x, crossPoint.y - target.y);
-    let travel = randomInt(220, 304);
-    let start = {
-      x: crossPoint.x + directionOut.x * travel,
-      y: crossPoint.y + directionOut.y * travel
-    };
-
-    while (start.x < width + 56) {
-      travel += 20;
-      start = {
-        x: crossPoint.x + directionOut.x * travel,
-        y: crossPoint.y + directionOut.y * travel
-      };
+    const approaches = [
+      () => ({ x: width + randomInt(92, 160), y: randomInt(54, 176) }),
+      () => ({ x: randomInt(156, width - 20), y: -randomInt(90, 168) }),
+      () => ({ x: width + randomInt(64, 132), y: -randomInt(18, 88) }),
+      () => ({ x: randomInt(122, 236), y: -randomInt(118, 188) })
+    ];
+    let start = choice(approaches)();
+    while (
+      Math.hypot(start.x - batteryBase.x, start.y - batteryBase.y) < 340 ||
+      Math.hypot(start.x - target.x, start.y - target.y) < 300
+    ) {
+      start = choice(approaches)();
     }
 
     const velocity = normalize(target.x - start.x, target.y - start.y);
@@ -1712,7 +1707,7 @@ function createCometDestroyer(root, api) {
       radius: randomInt(11, 15),
       angle: Math.random() * Math.PI * 2,
       spin: (Math.random() - 0.5) * 3,
-      tail: randomInt(36, 56),
+      tail: randomInt(42, 64),
       active: true
     });
   }
@@ -1755,7 +1750,7 @@ function createCometDestroyer(root, api) {
       start,
       target,
       travel: 0,
-      duration: clamp(distance / 240, 0.5, 0.92),
+      duration: clamp(distance / 248, 0.54, 0.98),
       active: true
     });
     game.missiles[tubeIndex].reload = 1.4;
@@ -1796,7 +1791,7 @@ function createCometDestroyer(root, api) {
     game.target = { x: 240, y: 150, show: 0.55 };
     game.lastTime = performance.now();
     updateHud();
-    api.setHint("Tap the sky to launch a missile.");
+    api.setHint("Tap the far sky to launch a missile.");
     api.setPrimary("Restart", start);
     cancelAnimationFrame(game.raf);
     draw();
@@ -2192,6 +2187,7 @@ function createCometDestroyer(root, api) {
       if (salvo.travel < salvo.duration) return;
       salvo.active = false;
       spawnExplosion(salvo.target.x, salvo.target.y, 26, "rgba(255, 182, 118, 0.92)");
+      api.sound("explosion", { freq: 288, duration: 0.16, gain: 0.1 });
     });
 
     game.comets.forEach((comet) => {
@@ -2230,7 +2226,7 @@ function createCometDestroyer(root, api) {
 
   api.setPrimary("Start", start);
   updateHud();
-  api.setHint("Tap the sky to launch a missile.");
+  api.setHint("Tap the far sky to launch a missile.");
   draw();
 
   return {
