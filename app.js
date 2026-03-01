@@ -3871,13 +3871,23 @@ function createDominoes(root, api) {
       const row = document.createElement("div");
       const rowIndex = Math.floor(start / tilesPerRow);
       row.className = `domino-chain-row${rowIndex % 2 === 1 ? " is-reverse" : ""}`;
-      const segment = game.chain.slice(start, start + tilesPerRow);
+      const segment = game.chain
+        .slice(start, start + tilesPerRow)
+        .map((tile, offset) => ({ tile, chainIndex: start + offset }));
       const visibleTiles = rowIndex % 2 === 1 ? [...segment].reverse() : segment;
 
-      visibleTiles.forEach((tile) => {
+      visibleTiles.forEach(({ tile, chainIndex }) => {
         const node = document.createElement("div");
         node.className = `domino-tile domino-tile-board${tile.left === tile.right ? " is-double" : ""}`;
         node.innerHTML = buildTileMarkup({ a: tile.left, b: tile.right });
+        if (chainIndex === 0) {
+          node.classList.add("is-open-left");
+          node.setAttribute("data-open-label", String(game.leftEnd));
+        }
+        if (chainIndex === game.chain.length - 1) {
+          node.classList.add("is-open-right");
+          node.setAttribute("data-open-label", String(game.rightEnd));
+        }
         row.appendChild(node);
       });
 
@@ -4172,7 +4182,7 @@ function createDominoes(root, api) {
 
     if (!sides.length) {
       api.sound("deny");
-      updateNote("That tile does not fit either end.");
+      updateNote(`That tile does not fit. Open ends are ${game.leftEnd} and ${game.rightEnd}.`);
       render();
       return;
     }

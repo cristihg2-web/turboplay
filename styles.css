@@ -1145,6 +1145,44 @@ button {
     0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
+.domino-tile-board.is-open-left,
+.domino-tile-board.is-open-right {
+  border-color: rgba(255, 191, 71, 0.42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -6px 10px rgba(15, 23, 48, 0.06),
+    0 0 0 1px rgba(255, 191, 71, 0.16),
+    0 6px 14px rgba(255, 191, 71, 0.16);
+}
+
+.domino-tile-board.is-open-left::before,
+.domino-tile-board.is-open-right::after {
+  content: attr(data-open-label);
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-top: -9px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffcf63, #ffbf47);
+  color: #1a1203;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 3px 8px rgba(255, 191, 71, 0.3);
+}
+
+.domino-tile-board.is-open-left::before {
+  left: -10px;
+}
+
+.domino-tile-board.is-open-right::after {
+  right: -10px;
+}
+
 .domino-tile-board.is-double {
   flex-basis: 42px;
   display: flex;
