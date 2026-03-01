@@ -117,6 +117,7 @@ const state = {
 };
 
 const els = {
+  gameTypes: document.querySelector("[data-game-types]"),
   railWrap: document.querySelector("[data-game-rail-wrap]"),
   rail: document.querySelector("[data-game-rail]"),
   railLeft: document.querySelector("[data-rail-left]"),
@@ -452,12 +453,21 @@ function renderRail() {
     button.type = "button";
     button.className = "game-pill";
     button.dataset.gameId = game.id;
-    button.innerHTML = `<span>${game.kicker}</span><strong>${game.name}</strong>`;
+    button.innerHTML = `<span class="game-pill-type">${game.kicker}</span><strong>${game.name}</strong>`;
     button.addEventListener("click", () => switchGame(game.id));
     els.rail.appendChild(button);
   });
   if (els.gameCount) {
     els.gameCount.textContent = `${GAME_DEFS.length} games`;
+  }
+  if (els.gameTypes) {
+    const byType = GAME_DEFS.reduce((map, game) => {
+      map.set(game.kicker, (map.get(game.kicker) || 0) + 1);
+      return map;
+    }, new Map());
+    els.gameTypes.innerHTML = `<span class="game-type-pill is-total">${GAME_DEFS.length} games</span>${Array.from(byType.entries())
+      .map(([type, count]) => `<span class="game-type-pill"><strong>${type}</strong><em>${count}</em></span>`)
+      .join("")}`;
   }
   syncRailControls();
 }

@@ -209,9 +209,52 @@ button {
   display: none;
 }
 
+.game-type-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 0 4px;
+}
+
+.game-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.game-type-pill strong,
+.game-type-pill em {
+  font-style: normal;
+}
+
+.game-type-pill em {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+.game-type-pill.is-total {
+  color: var(--amber);
+  border-color: rgba(255, 191, 71, 0.18);
+  background: rgba(255, 191, 71, 0.08);
+}
+
 .game-rail-wrap {
   position: relative;
-  margin-top: 12px;
+  margin-top: 8px;
   border-radius: 18px;
   overflow: hidden;
 }
@@ -247,10 +290,10 @@ button {
 .game-rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(140px, 1fr);
-  gap: 10px;
+  grid-auto-columns: minmax(118px, 1fr);
+  gap: 8px;
   overflow-x: auto;
-  padding: 10px 56px;
+  padding: 8px 50px;
   border: 0;
   border-radius: 18px;
   box-shadow: none;
@@ -310,32 +353,42 @@ button {
 
 .game-pill {
   display: grid;
-  gap: 6px;
-  min-height: 74px;
-  padding: 12px;
+  gap: 5px;
+  min-height: 56px;
+  padding: 8px 10px 9px;
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: 12px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
   color: var(--text);
   text-align: left;
   scroll-snap-align: start;
 }
 
-.game-pill span {
+.game-pill-type {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: 0.58rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .game-pill strong {
   font-family: var(--display);
-  font-size: 1rem;
+  font-size: 0.88rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
+  line-height: 0.92;
 }
 
 .game-pill.is-active {
@@ -1931,10 +1984,26 @@ button {
   }
 
   .game-rail {
-    grid-auto-columns: minmax(124px, 70%);
-    padding: 10px;
+    grid-auto-columns: minmax(106px, 62%);
+    padding: 8px;
     border: 1px solid var(--line);
     box-shadow: var(--shadow);
+  }
+
+  .game-type-strip {
+    gap: 6px;
+    margin-top: 8px;
+    padding: 0 2px;
+  }
+
+  .game-type-pill {
+    min-height: 24px;
+    padding: 4px 8px;
+    font-size: 0.6rem;
+  }
+
+  .game-type-pill em {
+    font-size: 0.74rem;
   }
 
   .dice-grid {
